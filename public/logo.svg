@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#B58E52"/>
+      <stop offset="100%" style="stop-color:#D4B88A"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="200" height="80" fill="#FBF9F6"/>
+  
+  <!-- Brand Name -->
+  <text 
+    x="100" 
+    y="45" 
+    font-family="Georgia, 'Playfair Display', serif" 
+    font-size="32" 
+    font-weight="600" 
+    fill="#111317" 
+    text-anchor="middle"
+    letter-spacing="4"
+  >SLIQUES</text>
+  
+  <!-- Gold Underline -->
+  <rect x="35" y="52" width="130" height="3" fill="url(#goldGradient)" rx="1.5"/>
+  
+  <!-- Tagline -->
+  <text 
+    x="100" 
+    y="68" 
+    font-family="Arial, sans-serif" 
+    font-size="8" 
+    fill="#111317" 
+    fill-opacity="0.5"
+    text-anchor="middle"
+    letter-spacing="2"
+  >BOUTIQUE TAILORING</text>
+</svg>

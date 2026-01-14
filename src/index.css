@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom utility classes */
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base bg-charcoal text-ivory font-medium rounded-sm transition-all duration-300 hover:bg-gold hover:text-charcoal focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-2 focus:ring-offset-ivory;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-4 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base border-2 border-charcoal text-charcoal font-medium rounded-sm transition-all duration-300 hover:bg-charcoal hover:text-ivory focus:outline-none focus:ring-2 focus:ring-charcoal focus:ring-offset-2 focus:ring-offset-ivory;
+  }
+  
+  .btn-gold {
+    @apply inline-flex items-center justify-center px-4 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base bg-gold text-charcoal font-medium rounded-sm transition-all duration-300 hover:bg-gold-dark hover:text-ivory focus:outline-none focus:ring-2 focus:ring-gold focus:ring-offset-2 focus:ring-offset-ivory;
+  }
+  
+  .btn-whatsapp {
+    @apply inline-flex items-center justify-center px-4 py-2.5 sm:px-6 sm:py-3 text-sm sm:text-base bg-[#25D366] text-white font-medium rounded-sm transition-all duration-300 hover:bg-[#128C7E] focus:outline-none focus:ring-2 focus:ring-[#25D366] focus:ring-offset-2 focus:ring-offset-ivory;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2.5 sm:px-4 sm:py-3 text-sm sm:text-base bg-white border border-charcoal/20 rounded-sm text-charcoal placeholder:text-charcoal/40 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-colors;
+  }
+  
+  .card {
+    @apply bg-white rounded-sm shadow-sm border border-charcoal/5 p-4 sm:p-6 transition-shadow hover:shadow-md;
+  }
+  
+  .section-title {
+    @apply font-playfair text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium text-charcoal;
+  }
+  
+  .section-subtitle {
+    @apply text-charcoal/70 text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl;
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-3 py-1 text-sm font-medium rounded-full;
+  }
+  
+  .badge-gold {
+    @apply badge bg-gold/10 text-gold-dark border border-gold/20;
+  }
+  
+  .badge-wine {
+    @apply badge bg-wine/10 text-wine border border-wine/20;
+  }
+  
+  .service-area-notice {
+    @apply bg-gold/10 text-charcoal px-4 py-2 text-sm font-medium border-l-4 border-gold;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FBF9F6;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #B58E52;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8A6B3D;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid #B58E52;
+  outline-offset: 2px;
+}
+
+/* Playfair Display styling for headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+}
+
+/* Animation classes */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.animate-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
