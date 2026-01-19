@@ -4,34 +4,42 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const webpush = require('web-push');
-const { WebSocketServer } = require('ws');
-const http = require('http');
 const ImageKit = require('imagekit');
 
 const app = express();
-const server = http.createServer(app);
 
-// WebSocket for real-time updates
-const wss = new WebSocketServer({ server });
-const clients = new Set();
+// Check if running in serverless environment (Vercel)
+const isServerless = process.env.VERCEL === '1';
 
-wss.on('connection', (ws) => {
-  clients.add(ws);
-  console.log('Admin client connected');
-  
-  ws.on('close', () => {
-    clients.delete(ws);
-    console.log('Admin client disconnected');
+// WebSocket setup - only for non-serverless environments
+let server, wss, clients;
+if (!isServerless) {
+  const http = require('http');
+  const { WebSocketServer } = require('ws');
+  server = http.createServer(app);
+  wss = new WebSocketServer({ server });
+  clients = new Set();
+
+  wss.on('connection', (ws) => {
+    clients.add(ws);
+    console.log('Admin client connected');
+    
+    ws.on('close', () => {
+      clients.delete(ws);
+      console.log('Admin client disconnected');
+    });
   });
-});
+}
 
-// Broadcast to all connected admin clients
+// Broadcast to all connected admin clients (no-op in serverless)
 const broadcastToAdmins = (data) => {
-  clients.forEach(client => {
-    if (client.readyState === 1) {
-      client.send(JSON.stringify(data));
-    }
-  });
+  if (!isServerless && clients) {
+    clients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify(data));
+      }
+    });
+  }
 };
 
 // Middleware
@@ -481,9 +489,14 @@ app.get('/api/available-dates', async (req, res) => {
   }
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 WebSocket ready for real-time updates`);
-});
+// Start server (only in non-serverless environments)
+if (!isServerless) {
+  const PORT = process.env.PORT || 5000;
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📡 WebSocket ready for real-time updates`);
+  });
+}
+
+// Export for Vercel serverless
+module.exports = app;
