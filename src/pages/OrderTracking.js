@@ -4,7 +4,8 @@ import { Search, Package, Check, Clock, Scissors, Truck, AlertCircle, MapPin, Ph
 import { useBooking } from '../context/BookingContext';
 import { orderStatuses } from '../data/bookings';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Production API URL
+const API_URL = process.env.REACT_APP_API_URL || 'https://admin-api-sliques.vercel.app';
 
 const OrderTracking = () => {
   const [searchParams] = useSearchParams();

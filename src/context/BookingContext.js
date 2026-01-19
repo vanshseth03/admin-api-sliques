@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { format, addDays, addHours, differenceInHours, startOfDay } from 'date-fns';
 import { generateBookingCounts, sampleBookings, timeSlots } from '../data/bookings';
 
-// API URL - change to your deployed server URL in production
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Production API URL
+const API_URL = process.env.REACT_APP_API_URL || 'https://admin-api-sliques.vercel.app';
 
 // Business rules - configurable (internal - not shown to users)
 export const BOOKING_RULES = {
