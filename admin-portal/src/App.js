@@ -161,30 +161,55 @@ function App() {
   // Subscribe to push notifications
   const subscribeToPush = async () => {
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') return;
+      // Check if service worker is supported
+      if (!('serviceWorker' in navigator)) {
+        console.error('Service workers not supported');
+        alert('Push notifications are not supported in this browser');
+        return;
+      }
       
-      const registration = await navigator.serviceWorker.ready;
+      const permission = await Notification.requestPermission();
+      console.log('Notification permission:', permission);
+      if (permission !== 'granted') {
+        alert('Please allow notifications to receive order alerts');
+        return;
+      }
+      
+      // Wait for service worker with timeout
+      console.log('Waiting for service worker...');
+      const registration = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Service worker not ready after 10s')), 10000)
+        )
+      ]);
+      console.log('Service worker ready:', registration.scope);
       
       // Get VAPID key
       const vapidRes = await fetch(`${API_URL}/api/push/vapid-key`);
       const { publicKey } = await vapidRes.json();
+      console.log('Got VAPID key:', publicKey?.substring(0, 20) + '...');
       
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey)
       });
+      console.log('Push subscription created:', subscription.endpoint?.substring(0, 50));
       
-      await fetch(`${API_URL}/api/push/subscribe`, {
+      const saveRes = await fetch(`${API_URL}/api/push/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription, deviceType: 'admin' })
+        body: JSON.stringify({ subscription: subscription.toJSON(), deviceType: 'admin' })
       });
+      const saveData = await saveRes.json();
+      console.log('Subscription saved:', saveData);
       
       setNotifEnabled(true);
       setShowNotifPrompt(false);
+      alert('Notifications enabled! You will now receive order alerts.');
     } catch (error) {
       console.error('Push subscription failed:', error);
+      alert('Failed to enable notifications: ' + error.message);
     }
   };
 

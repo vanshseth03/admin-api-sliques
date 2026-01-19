@@ -54,11 +54,23 @@ const imagekit = new ImageKit({
 });
 
 // Web Push setup
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL,
-  process.env.VAPID_PUBLIC_KEY,
-  process.env.VAPID_PRIVATE_KEY
-);
+try {
+  if (!process.env.VAPID_EMAIL || !process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    console.error('❌ Missing VAPID environment variables!');
+    console.error('  VAPID_EMAIL:', !!process.env.VAPID_EMAIL);
+    console.error('  VAPID_PUBLIC_KEY:', !!process.env.VAPID_PUBLIC_KEY);
+    console.error('  VAPID_PRIVATE_KEY:', !!process.env.VAPID_PRIVATE_KEY);
+  } else {
+    webpush.setVapidDetails(
+      process.env.VAPID_EMAIL,
+      process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY
+    );
+    console.log('✅ Web Push VAPID configured');
+  }
+} catch (error) {
+  console.error('❌ VAPID setup error:', error.message);
+}
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -81,21 +93,67 @@ app.get('/api/push/vapid-key', (req, res) => {
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
 });
 
+// Debug: Get push subscription count and test notifications
+app.get('/api/push/debug', async (req, res) => {
+  try {
+    const subscriptions = await PushSubscription.find({ deviceType: 'admin' });
+    res.json({
+      totalAdminSubscriptions: subscriptions.length,
+      subscriptions: subscriptions.map(s => ({
+        endpoint: s.endpoint?.substring(0, 60) + '...',
+        hasP256dh: !!s.keys?.p256dh,
+        hasAuth: !!s.keys?.auth,
+        lastActive: s.lastActive,
+        createdAt: s.createdAt
+      })),
+      vapidConfigured: !!process.env.VAPID_PUBLIC_KEY && !!process.env.VAPID_PRIVATE_KEY
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Test push notification endpoint
+app.post('/api/push/test', async (req, res) => {
+  try {
+    const count = await sendPushNotification(
+      '🧪 Test Notification',
+      'Push notifications are working!',
+      { type: 'test' }
+    );
+    res.json({ success: true, notificationsSent: count });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Subscribe to push notifications
 app.post('/api/push/subscribe', async (req, res) => {
   try {
     const { subscription, deviceType } = req.body;
     
-    // Save or update subscription
-    await PushSubscription.findOneAndUpdate(
+    console.log('📱 Push subscription request:', {
+      endpoint: subscription.endpoint?.substring(0, 50) + '...',
+      hasKeys: !!subscription.keys,
+      deviceType
+    });
+    
+    // Save or update subscription - explicitly extract keys to ensure proper storage
+    const saved = await PushSubscription.findOneAndUpdate(
       { endpoint: subscription.endpoint },
       { 
-        ...subscription,
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: subscription.keys?.p256dh,
+          auth: subscription.keys?.auth
+        },
         deviceType: deviceType || 'admin',
         lastActive: new Date()
       },
       { upsert: true, new: true }
     );
+    
+    console.log('✅ Subscription saved:', saved._id);
     
     res.json({ success: true, message: 'Subscribed to notifications' });
   } catch (error) {
@@ -109,6 +167,13 @@ const sendPushNotification = async (title, body, data = {}) => {
   try {
     const subscriptions = await PushSubscription.find({ deviceType: 'admin' });
     
+    console.log(`📢 Sending push notification to ${subscriptions.length} admin devices:`, { title, body });
+    
+    if (subscriptions.length === 0) {
+      console.log('⚠️ No admin subscriptions found - no notifications sent');
+      return 0;
+    }
+    
     const payload = JSON.stringify({
       title,
       body,
@@ -119,22 +184,32 @@ const sendPushNotification = async (title, body, data = {}) => {
     });
     
     const results = await Promise.allSettled(
-      subscriptions.map(sub => 
-        webpush.sendNotification({
+      subscriptions.map(sub => {
+        console.log('  → Sending to:', sub.endpoint?.substring(0, 50) + '...');
+        return webpush.sendNotification({
           endpoint: sub.endpoint,
-          keys: sub.keys
-        }, payload)
-      )
+          keys: {
+            p256dh: sub.keys?.p256dh,
+            auth: sub.keys?.auth
+          }
+        }, payload);
+      })
     );
     
-    // Remove invalid subscriptions
+    // Log results and remove invalid subscriptions
+    let successCount = 0;
     for (let i = 0; i < results.length; i++) {
       if (results[i].status === 'rejected') {
+        console.log('  ❌ Failed:', results[i].reason?.message || results[i].reason);
         await PushSubscription.deleteOne({ endpoint: subscriptions[i].endpoint });
+      } else {
+        successCount++;
+        console.log('  ✅ Sent successfully');
       }
     }
     
-    return results.filter(r => r.status === 'fulfilled').length;
+    console.log(`📊 Push notification result: ${successCount}/${subscriptions.length} successful`);
+    return successCount;
   } catch (error) {
     console.error('Push notification error:', error);
     return 0;

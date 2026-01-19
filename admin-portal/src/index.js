@@ -4,8 +4,8 @@ import App from './App';
 import './index.css';
 
 // Register Service Worker for PWA and Push Notifications
-// DISABLED in development to avoid caching issues
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+// Enable in both dev and prod for push notification testing
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
@@ -14,11 +14,6 @@ if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       .catch((error) => {
         console.log('SW registration failed:', error);
       });
-  });
-} else if ('serviceWorker' in navigator && process.env.NODE_ENV !== 'production') {
-  // Unregister any existing service workers in development
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    registrations.forEach(registration => registration.unregister());
   });
 }
 
