@@ -8,8 +8,10 @@ import {
   Sparkles, User, Calendar
 } from 'lucide-react';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const WS_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:5000';
+// Production API URL - no localhost fallback for deployed app
+const API_URL = process.env.REACT_APP_API_URL || 'https://admin-api-sliques.vercel.app';
+// WebSocket disabled for Vercel serverless - using polling instead
+const WS_ENABLED = false;
 
 // Status configuration - Simplified workflow
 const STATUS_CONFIG = {
@@ -62,9 +64,22 @@ function App() {
     }
   }, []);
 
-  // WebSocket connection with real-time selectedOrder sync
+  // WebSocket connection with real-time selectedOrder sync (disabled for Vercel serverless)
   useEffect(() => {
+    // WebSocket disabled for Vercel - using polling instead
+    if (!WS_ENABLED) {
+      // Poll for updates every 10 seconds
+      const pollInterval = setInterval(() => {
+        fetchOrders();
+        fetchStats();
+      }, 10000);
+      
+      return () => clearInterval(pollInterval);
+    }
+    
+    // WebSocket code for non-serverless environments
     let reconnectTimeout;
+    const WS_URL = API_URL.replace('https://', 'wss://').replace('http://', 'ws://');
     
     const connectWS = () => {
       try {
@@ -127,7 +142,7 @@ function App() {
         wsRef.current.close();
       }
     };
-  }, [fetchStats]);
+  }, [fetchOrders, fetchStats]);
 
   // Initial load
   useEffect(() => {
