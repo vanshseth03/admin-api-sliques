@@ -185,6 +185,14 @@ function App() {
       ]);
       console.log('Service worker ready:', registration.scope);
       
+      // Unsubscribe from any existing subscription first (important when VAPID key changes)
+      const existingSub = await registration.pushManager.getSubscription();
+      if (existingSub) {
+        console.log('Unsubscribing from existing subscription...');
+        await existingSub.unsubscribe();
+        console.log('Unsubscribed successfully');
+      }
+      
       // Get VAPID key
       const vapidRes = await fetch(`${API_URL}/api/push/vapid-key`);
       const { publicKey } = await vapidRes.json();
