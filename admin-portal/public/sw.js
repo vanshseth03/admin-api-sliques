@@ -87,8 +87,8 @@ self.addEventListener('push', (event) => {
   let data = {
     title: 'SLIQUES',
     body: 'New notification',
-    icon: '/favicon.svg',
-    badge: '/favicon.svg'
+    icon: '/favicon.png',
+    badge: '/favicon.png'
   };
   
   if (event.data) {
@@ -101,8 +101,8 @@ self.addEventListener('push', (event) => {
   
   const options = {
     body: data.body,
-    icon: data.icon || '/favicon.svg',
-    badge: data.badge || '/favicon.svg',
+    icon: data.icon || '/favicon.png',
+    badge: data.badge || '/favicon.png',
     vibrate: [200, 100, 200],
     tag: 'sliques-order',
     renotify: true,

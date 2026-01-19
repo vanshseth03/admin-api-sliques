@@ -112,8 +112,8 @@ const sendPushNotification = async (title, body, data = {}) => {
     const payload = JSON.stringify({
       title,
       body,
-      icon: '/logo192.png',
-      badge: '/badge.png',
+      icon: '/favicon.png',
+      badge: '/favicon.png',
       data,
       timestamp: Date.now()
     });
