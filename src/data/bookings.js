@@ -135,30 +135,41 @@ export const timeSlots = [
 ];
 
 // Order statuses with display names and descriptions
+// These match the backend Order model statuses
 export const orderStatuses = {
-  received: {
-    label: 'Received',
-    description: 'Your order has been received and is in queue',
+  'pickup-awaited': {
+    label: 'Pickup Awaited',
+    description: 'Your order has been placed. We will pick up your fabric soon.',
     step: 1
   },
-  cutting: {
-    label: 'Cutting',
-    description: 'Fabric is being cut according to your measurements',
+  'fabric-received': {
+    label: 'Fabric Received',
+    description: 'We have received your fabric and work will begin shortly.',
     step: 2
   },
-  stitching: {
-    label: 'Stitching',
-    description: 'Your outfit is being stitched with care',
+  'processing': {
+    label: 'Processing',
+    description: 'Your outfit is being crafted with care.',
     step: 3
   },
-  trial_ready: {
-    label: 'Trial Ready',
-    description: 'Ready for trial fitting - we will contact you',
+  'ready': {
+    label: 'Ready',
+    description: 'Your outfit is ready for delivery!',
     step: 4
   },
-  ready: {
-    label: 'Ready for Pickup',
-    description: 'Your outfit is ready! We will deliver or you can pick up',
+  'out-for-delivery': {
+    label: 'Out for Delivery',
+    description: 'Your order is on the way to you.',
     step: 5
+  },
+  'delivered': {
+    label: 'Delivered',
+    description: 'Order successfully delivered.',
+    step: 6
+  },
+  'cancelled': {
+    label: 'Cancelled',
+    description: 'This order has been cancelled.',
+    step: 0
   }
 };

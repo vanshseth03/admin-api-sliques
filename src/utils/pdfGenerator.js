@@ -53,8 +53,13 @@ export const generateOrderPDF = (orderData) => {
   yPos += 15;
 
   // Customer Details Section
+  // Calculate height based on address length
+  const addressText = `Address: ${orderData.address || 'N/A'}`;
+  const addressLines = doc.splitTextToSize(addressText, pageWidth - 50);
+  const customerDetailsHeight = 30 + (addressLines.length * 6);
+  
   doc.setFillColor(245, 245, 245);
-  doc.rect(20, yPos - 5, pageWidth - 40, 40, 'F');
+  doc.rect(20, yPos - 5, pageWidth - 40, customerDetailsHeight, 'F');
   
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
@@ -67,8 +72,10 @@ export const generateOrderPDF = (orderData) => {
   yPos += 8;
   doc.text(`Phone: ${orderData.phone || 'N/A'}`, 25, yPos);
   yPos += 8;
-  doc.text(`Address: ${orderData.address || 'N/A'}`, 25, yPos);
-  yPos += 15;
+  
+  // Address with word wrapping for long addresses
+  doc.text(addressLines, 25, yPos);
+  yPos += (addressLines.length * 6) + 12;
 
   // Order Details Section
   doc.setFontSize(11);

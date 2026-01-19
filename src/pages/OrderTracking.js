@@ -4,6 +4,8 @@ import { Search, Package, Check, Clock, Scissors, Truck, AlertCircle, MapPin, Ph
 import { useBooking } from '../context/BookingContext';
 import { orderStatuses } from '../data/bookings';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 const OrderTracking = () => {
   const [searchParams] = useSearchParams();
   const initialOrderId = searchParams.get('id') || '';
@@ -15,12 +17,25 @@ const OrderTracking = () => {
   
   const { getBookingById, bookings } = useBooking();
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     setError('');
     setIsSearching(true);
     
-    // Simulate API delay
+    try {
+      // First try API (backend database)
+      const response = await fetch(`${API_URL}/api/orders/${orderId.trim().toUpperCase()}`);
+      if (response.ok) {
+        const orderData = await response.json();
+        setSearchedOrder(orderData);
+        setIsSearching(false);
+        return;
+      }
+    } catch (err) {
+      console.warn('API fetch failed, checking local storage:', err);
+    }
+    
+    // Fallback to local state
     setTimeout(() => {
       const order = getBookingById(orderId.trim().toUpperCase());
       if (order) {
@@ -36,10 +51,25 @@ const OrderTracking = () => {
   // Auto-search if order ID is in URL
   React.useEffect(() => {
     if (initialOrderId) {
-      const order = getBookingById(initialOrderId.trim().toUpperCase());
-      if (order) {
-        setSearchedOrder(order);
-      }
+      const fetchOrder = async () => {
+        try {
+          const response = await fetch(`${API_URL}/api/orders/${initialOrderId.trim().toUpperCase()}`);
+          if (response.ok) {
+            const orderData = await response.json();
+            setSearchedOrder(orderData);
+            return;
+          }
+        } catch (err) {
+          console.warn('API fetch failed:', err);
+        }
+        
+        // Fallback to local
+        const order = getBookingById(initialOrderId.trim().toUpperCase());
+        if (order) {
+          setSearchedOrder(order);
+        }
+      };
+      fetchOrder();
     }
   }, [initialOrderId, getBookingById]);
 
@@ -48,11 +78,13 @@ const OrderTracking = () => {
   };
 
   const statusIcons = {
-    received: Package,
-    cutting: Scissors,
-    stitching: Scissors,
-    trial_ready: Clock,
-    ready: Check,
+    'pickup-awaited': Package,
+    'fabric-received': Package,
+    'processing': Scissors,
+    'ready': Check,
+    'out-for-delivery': Truck,
+    'delivered': Check,
+    'cancelled': AlertCircle,
   };
 
   return (
@@ -117,7 +149,7 @@ const OrderTracking = () => {
               <div className="flex items-center justify-between flex-wrap gap-3 sm:gap-4">
                 <div>
                   <span className="text-ivory/60 text-xs sm:text-sm">Order ID</span>
-                  <h2 className="font-mono text-base sm:text-xl font-bold">{searchedOrder.id}</h2>
+                  <h2 className="font-mono text-base sm:text-xl font-bold">{searchedOrder.orderId || searchedOrder.id}</h2>
                 </div>
                 <div className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium ${
                   searchedOrder.status === 'ready' 
@@ -137,27 +169,34 @@ const OrderTracking = () => {
               
               <div className="relative">
                 {/* Progress Line */}
-                <div className="absolute top-6 left-6 right-6 h-0.5 bg-charcoal/10" />
+                <div className="absolute top-5 sm:top-6 left-5 sm:left-6 right-5 sm:right-6 h-0.5 bg-charcoal/10" />
                 <div 
-                  className="absolute top-6 left-6 h-0.5 bg-gold transition-all duration-500"
+                  className="absolute top-5 sm:top-6 left-5 sm:left-6 h-0.5 bg-gold transition-all duration-500"
                   style={{ 
-                    width: `${((getStatusStep(searchedOrder.status) - 1) / 4) * 100}%`,
-                    maxWidth: 'calc(100% - 3rem)'
+                    width: `${((getStatusStep(searchedOrder.status) - 1) / 5) * 100}%`,
+                    maxWidth: 'calc(100% - 2.5rem)'
                   }}
                 />
                 
-                {/* Steps */}
+                {/* Steps - Show 6 key milestones */}
                 <div className="relative flex justify-between">
-                  {Object.entries(orderStatuses).map(([key, status], index) => {
+                  {[
+                    { key: 'pickup-awaited', label: 'Pickup' },
+                    { key: 'fabric-received', label: 'Received' },
+                    { key: 'processing', label: 'Processing' },
+                    { key: 'ready', label: 'Ready' },
+                    { key: 'out-for-delivery', label: 'Delivery' },
+                    { key: 'delivered', label: 'Delivered' }
+                  ].map(({ key, label }, index) => {
                     const currentStep = getStatusStep(searchedOrder.status);
-                    const stepNum = status.step;
+                    const stepNum = orderStatuses[key]?.step;
                     const isCompleted = stepNum < currentStep;
                     const isCurrent = stepNum === currentStep;
                     const Icon = statusIcons[key] || Package;
                     
                     return (
-                      <div key={key} className="flex flex-col items-center" style={{ width: '20%' }}>
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                      <div key={key} className="flex flex-col items-center" style={{ width: '16.66%' }}>
+                        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all ${
                           isCompleted 
                             ? 'bg-gold text-charcoal' 
                             : isCurrent 
@@ -165,15 +204,15 @@ const OrderTracking = () => {
                             : 'bg-charcoal/10 text-charcoal/40'
                         }`}>
                           {isCompleted ? (
-                            <Check className="w-6 h-6" />
+                            <Check className="w-5 h-5 sm:w-6 sm:h-6" />
                           ) : (
-                            <Icon className="w-5 h-5" />
+                            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                           )}
                         </div>
                         <span className={`text-xs mt-3 text-center ${
                           isCurrent ? 'text-charcoal font-medium' : 'text-charcoal/60'
                         }`}>
-                          {status.label}
+                          {label}
                         </span>
                       </div>
                     );

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { format, addDays, addHours, startOfDay } from 'date-fns';
-import { Calendar, AlertCircle, Check, MapPin, CreditCard, Info, ChevronRight, User, Phone, Ruler, Home, Download, MessageCircle, ArrowLeft, Clock } from 'lucide-react';
+import { Calendar, AlertCircle, Check, MapPin, CreditCard, Info, ChevronRight, User, Phone, Ruler, Home, Download, MessageCircle, ArrowLeft, Clock, Scissors } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
 import { useBooking, BOOKING_RULES } from '../context/BookingContext';
 import { getAllServices, getServiceById } from '../data/services';
@@ -161,9 +161,14 @@ const Booking = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // Scroll to top helper - gentle scroll
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
+  // Scroll to top helper
   const scrollToTop = () => {
-    window.scrollTo({ top: 200, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Scroll to next button helper
@@ -211,8 +216,21 @@ const Booking = () => {
         ? bookingData.selectedDate 
         : new Date();
       
-      const newBooking = createBooking({
+      // Map measurements to the format expected by admin portal  
+      const measurementsData = !bookingData.tailorAtDoorstep ? {
+        bust: bookingData.measurements.bust,
+        waist: bookingData.measurements.waist,
+        hips: bookingData.measurements.hips,
+        shoulderWidth: bookingData.measurements.shoulderWidth,
+        sleeveLength: bookingData.measurements.sleeveLength,
+        blouseLength: bookingData.measurements.topLength,
+        height: bookingData.measurements.height || bookingData.measurements.totalLength,
+      } : {};
+
+      const newBooking = await createBooking({
         ...bookingData,
+        measurements: measurementsData,
+        measurementMethod: bookingData.tailorAtDoorstep ? 'tailor' : 'self',
         bookingDate: format(measurementDate, 'yyyy-MM-dd'),
         processingStartDate: format(currentProcessingStart, 'yyyy-MM-dd'),
         preferredSlot: 'Flexible',
@@ -541,7 +559,7 @@ const Booking = () => {
                         <div className="flex items-center justify-between mb-1">
                           <h3 className="font-medium text-charcoal">🟢 Normal</h3>
                         </div>
-                        <p className="text-sm text-charcoal/60">Delivered within 7 days</p>
+                        <p className="text-sm text-charcoal/60">Delivered in approx 7-14 days</p>
                         <p className="text-xs text-charcoal/50 mt-1">May arrive earlier</p>
                       </button>
                       <button
@@ -644,6 +662,10 @@ const Booking = () => {
                             selectedDate: date,
                             bookingType: prev.bookingType
                           }))}
+                          getDateAvailability={(date) => {
+                            const slots = getRemainingSlots(date);
+                            return { hasSlots: slots.normal > 0, slotsLeft: slots.normal };
+                          }}
                         />
                         {errors.date && (
                           <p className="text-wine text-sm mt-2 flex items-center gap-1">
@@ -668,7 +690,7 @@ const Booking = () => {
                             <span className="text-charcoal/70">Estimated Delivery:</span>
                             <span className={`font-medium ${bookingData.bookingType === 'urgent' ? 'text-wine' : 'text-charcoal'}`}>
                               {format(getDeliveryDate(currentProcessingStart, bookingData.bookingType === 'urgent'), 'EEEE, MMM d')}
-                              {bookingData.bookingType === 'urgent' ? ' (36 hours)' : ' (within 7 days)'}
+                              {bookingData.bookingType === 'urgent' ? ' (36 hours)' : ' (approx 7-14 days)'}
                             </span>
                           </div>
                         </div>
@@ -699,9 +721,6 @@ const Booking = () => {
                           // Blouse-only services that need just top length
                           const blouseOnlyServices = ['simple-blouse', 'lining-blouse', 'padded-blouse', 'princess-blouse', 'sabyasachi-blouse', 'bridal-blouse'];
                           
-                          // Bottom-only services (pants)
-                          const bottomOnlyServices = ['simple-pant'];
-                          
                           // Default measurements
                           let measurementFields = [
                             { key: 'bust', label: 'Bust/Chest *', icon: Ruler },
@@ -718,9 +737,6 @@ const Booking = () => {
                           } else if (blouseOnlyServices.includes(serviceId)) {
                             // Blouse: top length only
                             measurementFields.push({ key: 'topLength', label: 'Blouse Length', icon: Ruler });
-                          } else if (bottomOnlyServices.includes(serviceId)) {
-                            // Pants: bottom length only
-                            measurementFields.push({ key: 'bottomLength', label: 'Pant Length', icon: Ruler });
                           } else {
                             // Suits: both top and bottom length
                             measurementFields.push({ key: 'topLength', label: 'Top/Kurta Length', icon: Ruler });
@@ -772,9 +788,12 @@ const Booking = () => {
                           <span className="text-charcoal/70">Estimated Delivery:</span>
                           <span className={`font-medium ${bookingData.bookingType === 'urgent' ? 'text-wine' : 'text-charcoal'}`}>
                             {format(getDeliveryDate(currentProcessingStart, bookingData.bookingType === 'urgent'), 'EEEE, MMM d')}
-                            {bookingData.bookingType === 'urgent' ? ' (36 hours)' : ' (within 7 days)'}
+                            {bookingData.bookingType === 'urgent' ? ' (36 hours)' : ' (approx 7-14 days)'}
                           </span>
                         </div>
+                        <p className="text-xs text-charcoal/60 mt-2">
+                          * Your order can be delivered before this date
+                        </p>
                       </div>
 
 
@@ -834,6 +853,38 @@ const Booking = () => {
                         </span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Important Terms & Conditions */}
+                  <div className="bg-wine/5 border border-wine/20 rounded-sm p-4 sm:p-6 mb-6">
+                    <h3 className="font-medium text-charcoal mb-4 flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-wine" />
+                      Important Terms & Conditions
+                    </h3>
+                    <ul className="space-y-3 text-sm text-charcoal/80">
+                      <li className="flex items-start gap-2">
+                        <span className="text-wine font-bold">•</span>
+                        <span><strong>Fabric Damage:</strong> If your fabric is damaged or defective before starting processing, we are not liable for the final outcome.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-wine font-bold">•</span>
+                        <span><strong>Alteration Policy:</strong> One free alteration is offered with free pick up and drop soon after delivery.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-wine font-bold">•</span>
+                        <span><strong>Payment:</strong> Complete payment must be made at the time of delivery. Payment modes: QR or Cash only.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-wine font-bold">•</span>
+                        <span><strong>Agreement:</strong> By confirming, you agree to these terms and our tailoring guidelines.</span>
+                      </li>
+                      {pricing.advanceAmount > 0 && (
+                        <li className="flex items-start gap-2">
+                          <span className="text-gold-dark font-bold">•</span>
+                          <span><strong>Advance Required:</strong> ₹{pricing.advanceAmount} advance payment is mandatory. Advance is non-refundable in case of cancellation.</span>
+                        </li>
+                      )}
+                    </ul>
                   </div>
                   
                   {/* Terms */}
@@ -924,9 +975,16 @@ const Booking = () => {
                   <button 
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="btn-gold w-full mt-6"
+                    className="btn-gold w-full mt-6 flex items-center justify-center gap-2"
                   >
-                    {isSubmitting ? 'Processing...' : 'Confirm Booking'}
+                    {isSubmitting ? (
+                      <>
+                        <Scissors className="w-5 h-5 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      'Confirm Booking'
+                    )}
                   </button>
                 </div>
               )}

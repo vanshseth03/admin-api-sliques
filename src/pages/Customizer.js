@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { Upload, X, Check, ArrowRight, ArrowLeft, Download, MessageCircle, Sparkles, Phone, Calendar, Ruler, Home, User, Clock, AlertCircle, Info } from 'lucide-react';
+import { Upload, X, Check, ArrowRight, ArrowLeft, Download, MessageCircle, Sparkles, Phone, Calendar, Ruler, Home, User, Clock, AlertCircle, Info, Scissors } from 'lucide-react';
 import { useBooking } from '../context/BookingContext';
 import { baseOutfits, neckDesigns, sleeveStyles, addOns, fitOptions } from '../data/customizer';
 import { format, addDays, addHours, startOfDay } from 'date-fns';
@@ -9,6 +9,7 @@ import DatePicker from '../components/DatePicker';
 const Customizer = () => {
   const [step, setStep] = useState(1);
   const [isUrgent, setIsUrgent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
   const { calculatePrice, getNextAvailableNormalDate, getNextAvailableUrgentDate, createBooking, getRemainingSlots } = useBooking();
@@ -46,6 +47,16 @@ const Customizer = () => {
     notes: '',
   });
 
+  // Confirmation checkboxes
+  const [acceptedMeasurementResponsibility, setAcceptedMeasurementResponsibility] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  // Additional details state - for extra images and remarks
+  const [additionalDetails, setAdditionalDetails] = useState({
+    images: [], // Array of { file, preview, description }
+    remarks: '',
+  });
+
   // Delivery dates
   const [deliveryDates, setDeliveryDates] = useState({
     normal: null,
@@ -53,6 +64,63 @@ const Customizer = () => {
   });
 
   const fileInputRef = useRef(null);
+  const additionalImagesRef = useRef(null);
+
+  // Handle additional images upload
+  const handleAdditionalImagesUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + additionalDetails.images.length > 5) {
+      alert('Maximum 5 additional images allowed');
+      return;
+    }
+    
+    files.forEach(file => {
+      if (!file.type.match(/image\/(jpeg|png|svg\+xml|webp)/)) {
+        alert('Please upload JPG, PNG, WEBP, or SVG files');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Each file should be less than 5MB');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAdditionalDetails(prev => ({
+          ...prev,
+          images: [...prev.images, {
+            file,
+            preview: e.target.result,
+            description: '',
+          }],
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Reset input
+    if (additionalImagesRef.current) {
+      additionalImagesRef.current.value = '';
+    }
+  };
+
+  // Remove additional image
+  const removeAdditionalImage = (index) => {
+    setAdditionalDetails(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Update additional image description
+  const updateImageDescription = (index, description) => {
+    setAdditionalDetails(prev => ({
+      ...prev,
+      images: prev.images.map((img, i) => 
+        i === index ? { ...img, description } : img
+      ),
+    }));
+  };
 
   // Fetch delivery dates on mount
   useEffect(() => {
@@ -150,16 +218,28 @@ const Customizer = () => {
   };
 
   // Handle booking submission
-  const handleBookingSubmit = () => {
+  const handleBookingSubmit = async () => {
     if (!bookingForm.name || !bookingForm.phone || !bookingForm.address) {
       alert('Please fill in all required fields');
       return;
     }
 
+    setIsSubmitting(true);
     const deliveryDate = isUrgent ? deliveryDates.urgent : deliveryDates.normal;
     
     try {
-      const booking = createBooking({
+      // Map measurements to the format expected by admin portal
+      const measurementsData = measurementChoice === 'self' ? {
+        bust: measurements.bust,
+        waist: measurements.waist,
+        hips: measurements.hips,
+        shoulderWidth: measurements.shoulderWidth,
+        sleeveLength: measurements.sleeveLength,
+        blouseLength: measurements.topLength, // Map topLength to blouseLength for admin
+        height: measurements.totalLength,
+      } : {};
+
+      const booking = await createBooking({
         customerName: bookingForm.name,
         phone: bookingForm.phone,
         address: bookingForm.address,
@@ -168,12 +248,27 @@ const Customizer = () => {
         serviceType: 'custom',
         bookingType: isUrgent ? 'urgent' : 'normal',
         bookingDate: format(deliveryDate, 'yyyy-MM-dd'),
+        // Add measurements and method
+        measurements: measurementsData,
+        measurementMethod: measurementChoice,
+        tailorVisitDate: measurementChoice === 'tailor' ? format(tailorDate, 'yyyy-MM-dd') : null,
+        tailorAtDoorstep: measurementChoice === 'tailor',
         customization: {
           neckDesign: customization.neckDesign?.name,
           sleeveStyle: customization.sleeveStyle?.name,
           fit: customization.fit?.name,
           addOns: customization.selectedAddOns.map(a => a.name),
+          customNeckImage: customization.customNeckPreview,
         },
+        additionalImages: additionalDetails.images.map(img => ({
+          data: img.preview,
+          description: img.description,
+        })),
+        additionalRemarks: additionalDetails.remarks,
+        extraChargesNote: additionalDetails.images.length > 0 || additionalDetails.remarks ? 'Extra charges may apply based on additional requirements' : null,
+        basePrice: customization.baseOutfit?.basePrice,
+        addOnsTotal: customization.selectedAddOns.reduce((sum, a) => sum + a.price, 0),
+        urgentSurcharge: pricing.urgentSurcharge,
         totalAmount: pricing.total,
         advanceAmount: pricing.advanceAmount,
         requiresAdvance: pricing.requiresAdvance,
@@ -188,6 +283,8 @@ const Customizer = () => {
       setOrderComplete(true);
     } catch (error) {
       alert(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -233,9 +330,12 @@ const Customizer = () => {
         if (measurementChoice === 'tailor') return tailorDate !== null;
         if (measurementChoice === 'self') return measurements.bust && measurements.waist;
         return false;
-      case 5: return (bookingForm.name || '').trim() !== '' && 
-                     (bookingForm.phone || '').trim().length >= 10 && 
-                     (bookingForm.address || '').trim() !== '';
+      case 5: 
+        // Booking form + confirmations
+        const hasBasicInfo = (bookingForm.name || '').trim() !== '' && 
+                            (bookingForm.phone || '').trim().length >= 10 && 
+                            (bookingForm.address || '').trim() !== '';
+        return hasBasicInfo && acceptedMeasurementResponsibility && acceptedTerms;
       default: return true;
     }
   };
@@ -272,6 +372,11 @@ const Customizer = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
   // Scroll to top helper
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -294,7 +399,7 @@ const Customizer = () => {
     setTimeout(() => {
       if (step < 5) {
         setStep(step + 1);
-        window.scrollTo({ top: 200, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }, 300);
   };
@@ -302,14 +407,15 @@ const Customizer = () => {
   const nextStep = () => {
     if (canProceed() && step < 5) {
       setStep(step + 1);
-      // Gentle scroll only on explicit navigation
-      window.scrollTo({ top: 200, behavior: 'smooth' });
+      // Scroll to top on step change
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const prevStep = () => {
     if (step > 1) {
       setStep(step - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -710,6 +816,10 @@ const Customizer = () => {
                         <DatePicker
                           selectedDate={tailorDate}
                           onDateSelect={(date) => setTailorDate(date)}
+                          getDateAvailability={(date) => {
+                            const slots = getRemainingSlots(date);
+                            return { hasSlots: slots.normal > 0, slotsLeft: slots.normal };
+                          }}
                         />
                       </div>
 
@@ -728,9 +838,12 @@ const Customizer = () => {
                             <span className="text-charcoal/70">Estimated Delivery:</span>
                             <span className={`font-medium ${isUrgent ? 'text-wine' : 'text-charcoal'}`}>
                               {format(getDeliveryDate(getProcessingStartDate, isUrgent), 'EEEE, MMM d')}
-                              {isUrgent ? ' (36 hours)' : ' (within 7 days)'}
+                              {isUrgent ? ' (36 hours)' : ' (approx 7-14 days)'}
                             </span>
                           </div>
+                          <p className="text-xs text-charcoal/60 mt-2">
+                            * Your order can be delivered before this date
+                          </p>
                         </div>
                       )}
 
@@ -806,9 +919,12 @@ const Customizer = () => {
                           <span className="text-charcoal/70">Estimated Delivery:</span>
                           <span className={`font-medium ${isUrgent ? 'text-wine' : 'text-charcoal'}`}>
                             {format(getDeliveryDate(getProcessingStartDate, isUrgent), 'EEEE, MMM d')}
-                            {isUrgent ? ' (36 hours)' : ' (within 7 days)'}
+                            {isUrgent ? ' (36 hours)' : ' (approx 7-14 days)'}
                           </span>
                         </div>
+                        <p className="text-xs text-charcoal/60 mt-2">
+                          * Your order can be delivered before this date
+                        </p>
                       </div>
 
 
@@ -903,6 +1019,120 @@ const Customizer = () => {
                     </p>
                   </div>
 
+                  {/* Additional Details Section */}
+                  <div className="bg-white border border-charcoal/10 rounded-sm p-3 sm:p-4 mb-4 sm:mb-6">
+                    <h3 className="font-medium text-charcoal mb-3 text-sm sm:text-base flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-gold" />
+                      Additional Details (Optional)
+                    </h3>
+                    <p className="text-xs text-charcoal/60 mb-4">
+                      Upload reference images or add special instructions. <span className="text-wine font-medium">Extra charges may apply</span> based on complexity.
+                    </p>
+                    
+                    {/* Additional Images Upload */}
+                    <div className="mb-4">
+                      <label className="block text-xs sm:text-sm text-charcoal/70 mb-2">Reference Images (Max 5)</label>
+                      <input
+                        ref={additionalImagesRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                        onChange={handleAdditionalImagesUpload}
+                        multiple
+                        className="hidden"
+                      />
+                      
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                        {additionalDetails.images.map((img, index) => (
+                          <div key={index} className="relative group">
+                            <div className="aspect-square rounded-sm overflow-hidden border border-charcoal/20">
+                              <img 
+                                src={img.preview} 
+                                alt={`Reference ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <button
+                              onClick={() => removeAdditionalImage(index)}
+                              className="absolute -top-2 -right-2 w-5 h-5 bg-wine text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                            <input
+                              type="text"
+                              value={img.description}
+                              onChange={(e) => updateImageDescription(index, e.target.value)}
+                              placeholder="Label"
+                              className="mt-1 w-full px-1 py-0.5 text-[10px] border border-charcoal/10 rounded-sm"
+                            />
+                          </div>
+                        ))}
+                        
+                        {additionalDetails.images.length < 5 && (
+                          <button
+                            onClick={() => additionalImagesRef.current?.click()}
+                            className="aspect-square rounded-sm border-2 border-dashed border-charcoal/20 flex flex-col items-center justify-center gap-1 hover:border-gold hover:bg-gold/5 transition-all"
+                          >
+                            <Upload className="w-5 h-5 text-charcoal/40" />
+                            <span className="text-[10px] text-charcoal/50">Add Image</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Additional Remarks */}
+                    <div>
+                      <label className="block text-xs sm:text-sm text-charcoal/70 mb-1">Special Instructions / Remarks</label>
+                      <textarea
+                        value={additionalDetails.remarks}
+                        onChange={(e) => setAdditionalDetails(prev => ({ ...prev, remarks: e.target.value }))}
+                        placeholder="Any special requirements, design preferences, or notes for the tailor..."
+                        rows={3}
+                        className="w-full px-3 py-2 text-sm border border-charcoal/20 rounded-sm focus:outline-none focus:border-gold resize-none"
+                      />
+                    </div>
+                    
+                    {(additionalDetails.images.length > 0 || additionalDetails.remarks) && (
+                      <div className="mt-3 p-2 bg-wine/10 border border-wine/20 rounded-sm">
+                        <p className="text-xs text-wine flex items-center gap-2">
+                          <Info className="w-3 h-3" />
+                          Note: Extra charges may apply based on additional design requirements
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Terms & Conditions */}
+                  <div className="bg-charcoal/5 rounded-sm p-3 sm:p-4 mb-4 sm:mb-6">
+                    <h3 className="font-medium text-charcoal mb-3 text-sm sm:text-base flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-wine" />
+                      Important Terms & Conditions
+                    </h3>
+                    <ul className="space-y-2 text-xs sm:text-sm text-charcoal/70">
+                      <li className="flex items-start gap-2">
+                        <span className="text-wine">•</span>
+                        <span><strong>Fabric Damage:</strong> If your fabric is damaged or defective before starting processing, we are not liable for the final outcome.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-wine">•</span>
+                        <span><strong>Alteration Policy:</strong> One free alteration is offered with free pick up and drop soon after delivery.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-wine">•</span>
+                        <span><strong>Payment:</strong> Complete payment must be made at the time of delivery. Payment modes: QR or Cash only.</span>
+                      </li>
+                      {pricing.advanceAmount > 0 && (
+                        <li className="flex items-start gap-2">
+                          <span className="text-gold-dark">•</span>
+                          <span><strong>Advance Payment:</strong> ₹{pricing.advanceAmount} advance is required for this order. Advance is non-refundable.</span>
+                        </li>
+                      )}
+                      <li className="flex items-start gap-2">
+                        <span className="text-wine">•</span>
+                        <span><strong>Agreement:</strong> By confirming, you agree to these terms and our tailoring guidelines.</span>
+                      </li>
+                    </ul>
+                  </div>
+
                   {/* Booking Form */}
                   <div className="space-y-3 sm:space-y-4">
                     <h3 className="font-medium text-charcoal text-sm sm:text-base">Your Details</h3>
@@ -941,6 +1171,40 @@ const Customizer = () => {
                     </div>
                   </div>
 
+                  {/* Confirmation Checkboxes */}
+                  <div className="space-y-3 mb-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={acceptedMeasurementResponsibility}
+                        onChange={(e) => setAcceptedMeasurementResponsibility(e.target.checked)}
+                        className="w-5 h-5 rounded border-charcoal/30 text-gold focus:ring-gold mt-0.5"
+                      />
+                      <div>
+                        <span className="text-xs sm:text-sm text-charcoal">
+                          {measurementChoice === 'tailor'
+                            ? "I confirm that I will be available at the scheduled time for the tailor's visit."
+                            : "I confirm that the measurements provided are accurate. I understand that SLIQUES is not responsible for fit issues arising from incorrect measurements provided by me."
+                          }
+                        </span>
+                      </div>
+                    </label>
+                    
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={acceptedTerms}
+                        onChange={(e) => setAcceptedTerms(e.target.checked)}
+                        className="w-5 h-5 rounded border-charcoal/30 text-gold focus:ring-gold mt-0.5"
+                      />
+                      <div>
+                        <span className="text-xs sm:text-sm text-charcoal">
+                          I agree to the Terms & Conditions{pricing.advanceAmount > 0 && " and understand that advance payment is non-refundable in case of cancellation"}.
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+
                   {/* Action Buttons */}
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4 sm:mt-6">
                     <button
@@ -952,11 +1216,20 @@ const Customizer = () => {
                     </button>
                     <button
                       onClick={handleBookingSubmit}
-                      disabled={!canProceed()}
-                      className={`px-4 py-2.5 text-sm bg-gold text-charcoal rounded-sm hover:bg-gold-dark flex items-center justify-center gap-2 flex-1 font-medium ${!canProceed() && 'opacity-50 cursor-not-allowed'}`}
+                      disabled={!canProceed() || isSubmitting}
+                      className={`px-4 py-2.5 text-sm bg-gold text-charcoal rounded-sm hover:bg-gold-dark flex items-center justify-center gap-2 flex-1 font-medium ${(!canProceed() || isSubmitting) && 'opacity-50 cursor-not-allowed'}`}
                     >
-                      <Calendar className="w-4 h-4" />
-                      Confirm Booking
+                      {isSubmitting ? (
+                        <>
+                          <Scissors className="w-4 h-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Calendar className="w-4 h-4" />
+                          Confirm Booking
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

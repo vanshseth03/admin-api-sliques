@@ -4,7 +4,6 @@
 
 // Import optimized WebP images (compressed from 80MB to 0.7MB)
 import simpleSalwarImg from '../images-optimized/simple salwar suit.webp';
-import pantSuitImg from '../images-optimized/pant suit.webp';
 import simpleBlouseImg from '../images-optimized/simple blouse.webp';
 import liningSalwarImg from '../images-optimized/lining pant suit.webp';
 import liningBlouseImg from '../images-optimized/lining blouse.webp';
@@ -44,7 +43,7 @@ export const serviceCategories = [
         basePrice: 800,
         estimatedDays: 7,
         requiresAdvance: false,
-        image: pantSuitImg
+        image: simplePantImg
       },
       {
         id: 'simple-blouse',
@@ -54,15 +53,6 @@ export const serviceCategories = [
         estimatedDays: 7,
         requiresAdvance: false,
         image: simpleBlouseImg
-      },
-      {
-        id: 'simple-pant',
-        name: 'Simple Pant',
-        description: 'Well-fitted simple pants for everyday comfort.',
-        basePrice: 400,
-        estimatedDays: 7,
-        requiresAdvance: false,
-        image: simplePantImg
       }
     ]
   },

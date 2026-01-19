@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, isBefore, startOfToday } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const DatePicker = ({ selectedDate, onDateSelect }) => {
+const DatePicker = ({ selectedDate, onDateSelect, getDateAvailability }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const today = startOfToday();
@@ -24,8 +24,14 @@ const DatePicker = ({ selectedDate, onDateSelect }) => {
   };
 
   // Only disable past dates and today - tailor can always visit from tomorrow
+  // Also check if date has availability if callback provided
   const isDateDisabled = (date) => {
-    return isBefore(date, tomorrow);
+    if (isBefore(date, tomorrow)) return true;
+    if (getDateAvailability) {
+      const { hasSlots } = getDateAvailability(date);
+      return !hasSlots;
+    }
+    return false;
   };
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

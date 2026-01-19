@@ -11,7 +11,6 @@ import simpleSalwarImg from '../images-optimized/simple salwar suit.webp';
 import simplePantImg from '../images-optimized/simple pant.webp';
 import liningBlouseImg from '../images-optimized/lining blouse.webp';
 import liningSalwarImg from '../images-optimized/lining pant suit.webp';
-import pantSuitImg from '../images-optimized/pant suit.webp';
 import paddedBlouseImg from '../images-optimized/paded blousse.webp';
 import princessBlouseImg from '../images-optimized/princess cut.webp';
 import anarkaliImg from '../images-optimized/anarkali suit.webp';
@@ -52,7 +51,7 @@ export const baseOutfits = [
     id: 'simple-pant-suit',
     name: 'Simple Pant Suit',
     basePrice: 800,
-    image: pantSuitImg,
+    image: simplePantImg,
     description: 'Well-tailored pant suit for modern style'
   },
   {

@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import { format, addDays, addHours, differenceInHours, startOfDay } from 'date-fns';
 import { generateBookingCounts, sampleBookings, timeSlots } from '../data/bookings';
+
+// API URL - change to your deployed server URL in production
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 // Business rules - configurable (internal - not shown to users)
 export const BOOKING_RULES = {
@@ -27,6 +30,40 @@ export function BookingProvider({ children }) {
   const [bookings, setBookings] = useState(sampleBookings);
   const [bookingCounts, setBookingCounts] = useState(generateBookingCounts);
   const [currentBooking, setCurrentBooking] = useState(null);
+  const [availableDatesFromAPI, setAvailableDatesFromAPI] = useState([]);
+  const [firstAvailableDate, setFirstAvailableDate] = useState(null);
+
+  // Fetch available dates from API
+  const fetchAvailableDates = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/available-dates`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableDatesFromAPI(data.dates || []);
+        setFirstAvailableDate(data.firstAvailableDate);
+        
+        // Update booking counts from API data
+        const newCounts = {};
+        data.dates.forEach(d => {
+          newCounts[d.date] = {
+            normal: BOOKING_RULES.MAX_NORMAL_PER_DAY - d.remainingSlots,
+            urgent: 0
+          };
+        });
+        setBookingCounts(prev => ({ ...prev, ...newCounts }));
+        
+        return data;
+      }
+    } catch (error) {
+      console.warn('Failed to fetch available dates:', error.message);
+    }
+    return null;
+  }, []);
+
+  // Fetch available dates on mount
+  useEffect(() => {
+    fetchAvailableDates();
+  }, [fetchAvailableDates]);
 
   // Get count of bookings for a specific date
   const getBookingCountForDate = useCallback((date) => {
@@ -36,6 +73,12 @@ export function BookingProvider({ children }) {
 
   // Find next available date for normal orders (min 1 week, max 4 per day)
   const getNextAvailableNormalDate = useCallback(() => {
+    // If we have API data, use the first available date
+    if (firstAvailableDate) {
+      return new Date(firstAvailableDate);
+    }
+    
+    // Fallback to local calculation
     const minDate = addDays(startOfDay(new Date()), BOOKING_RULES.NORMAL_MIN_DAYS);
     let checkDate = minDate;
     
@@ -49,7 +92,7 @@ export function BookingProvider({ children }) {
     }
     
     return minDate; // Fallback
-  }, [getBookingCountForDate]);
+  }, [getBookingCountForDate, firstAvailableDate]);
 
   // Find next available date for urgent orders (min 36 hours, max 4 per day)
   const getNextAvailableUrgentDate = useCallback(() => {
@@ -71,9 +114,19 @@ export function BookingProvider({ children }) {
   // Check if a date has available slots for normal bookings
   const hasNormalSlotsAvailable = useCallback((date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
+    
+    // Check API data first
+    if (availableDatesFromAPI.length > 0) {
+      const apiDate = availableDatesFromAPI.find(d => d.date === dateStr);
+      if (apiDate) {
+        return !apiDate.isFull;
+      }
+    }
+    
+    // Fallback to local counts
     const counts = bookingCounts[dateStr] || { normal: 0, urgent: 0 };
     return counts.normal < BOOKING_RULES.MAX_NORMAL_PER_DAY;
-  }, [bookingCounts]);
+  }, [bookingCounts, availableDatesFromAPI]);
 
   // Check if a date has available slots for urgent bookings
   const hasUrgentSlotsAvailable = useCallback((date) => {
@@ -96,13 +149,26 @@ export function BookingProvider({ children }) {
   // Get remaining slots for a date
   const getRemainingSlots = useCallback((date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
+    
+    // Check API data first
+    if (availableDatesFromAPI.length > 0) {
+      const apiDate = availableDatesFromAPI.find(d => d.date === dateStr);
+      if (apiDate) {
+        return {
+          normal: apiDate.remainingSlots,
+          urgent: Math.max(0, BOOKING_RULES.MAX_URGENT_PER_DAY), // Urgent slots managed separately
+        };
+      }
+    }
+    
+    // Fallback to local counts
     const counts = bookingCounts[dateStr] || { normal: 0, urgent: 0 };
     
     return {
       normal: Math.max(0, BOOKING_RULES.MAX_NORMAL_PER_DAY - counts.normal),
       urgent: Math.max(0, BOOKING_RULES.MAX_URGENT_PER_DAY - counts.urgent),
     };
-  }, [bookingCounts]);
+  }, [bookingCounts, availableDatesFromAPI]);
 
   // Check if urgent booking is allowed (36 hour minimum)
   const isUrgentAllowed = useCallback((date) => {
@@ -145,7 +211,7 @@ export function BookingProvider({ children }) {
   }, []);
 
   // Create a new booking
-  const createBooking = useCallback((bookingData) => {
+  const createBooking = useCallback(async (bookingData) => {
     const dateStr = format(new Date(bookingData.bookingDate), 'yyyy-MM-dd');
     const bookingType = bookingData.bookingType || 'normal';
     
@@ -158,18 +224,45 @@ export function BookingProvider({ children }) {
       throw new Error('No urgent booking slots available for this date');
     }
     
-    // Generate booking ID
+    // Generate booking ID (local fallback)
     const bookingId = `SLQ-${new Date().getFullYear()}-${String(bookings.length + 1).padStart(3, '0')}`;
     
     const newBooking = {
       id: bookingId,
       ...bookingData,
-      status: 'received',
+      status: 'pickup-awaited',
       createdAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
       updatedAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
     };
     
-    // Update bookings
+    // Send to backend API (non-blocking)
+    try {
+      const response = await fetch(`${API_URL}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...bookingData,
+          orderId: bookingId,
+          status: 'pickup-awaited',
+          bookingDate: new Date(bookingData.bookingDate),
+          createdAt: new Date(),
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Order synced to server:', result.order?.orderId);
+        // Update booking ID from server if available
+        if (result.order?.orderId) {
+          newBooking.id = result.order.orderId;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to sync order to server (offline mode):', error.message);
+      // Continue with local booking - will sync later
+    }
+    
+    // Update local state
     setBookings(prev => [...prev, newBooking]);
     
     // Update booking counts
@@ -211,6 +304,9 @@ export function BookingProvider({ children }) {
     getAvailableTimeSlots,
     getNextAvailableNormalDate,
     getNextAvailableUrgentDate,
+    fetchAvailableDates,
+    availableDatesFromAPI,
+    firstAvailableDate,
     BOOKING_RULES,
   }), [
     bookings,
@@ -226,6 +322,9 @@ export function BookingProvider({ children }) {
     getAvailableTimeSlots,
     getNextAvailableNormalDate,
     getNextAvailableUrgentDate,
+    fetchAvailableDates,
+    availableDatesFromAPI,
+    firstAvailableDate,
   ]);
 
   return (
