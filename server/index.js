@@ -247,12 +247,15 @@ app.post('/api/imagekit/upload', async (req, res) => {
 // ============ ORDER ROUTES ============
 
 // Create new order
-// Generate unique order ID: SLQ + 4 digit sequence (e.g., SLQ1003)
+// Generate unique order ID: SLQ + 4 digit sequence starting from 1231 (e.g., SLQ1231)
 const generateOrderId = async () => {
-  // Get total count of all orders
+  // Start sequence number (adjustable)
+  const START_SEQ = 1231;
+  // Count existing orders and offset by START_SEQ
   const orderCount = await Order.countDocuments();
-  const sequence = String(orderCount + 1).padStart(4, '0');
-  
+  const sequenceNumber = START_SEQ + orderCount;
+  const sequence = String(sequenceNumber).padStart(4, '0');
+
   return `SLQ${sequence}`;
 };
 
