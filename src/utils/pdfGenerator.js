@@ -11,21 +11,6 @@ const BUSINESS = {
   website: 'www.sliques.in',
 };
 
-// Generate non-guessable order ID
-const generateOrderId = () => {
-  const now = new Date();
-  const year = String(now.getFullYear()).slice(-2);
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let random = '';
-  for (let i = 0; i < 5; i++) {
-    random += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  // Format: SLQ + YYMMDD + 5 random chars = SLQ260122KX3PY (16 chars total)
-  return `SLQ${year}${month}${day}${random}`;
-};
-
 /**
  * Generate a PDF invoice/order summary
  * @param {Object} orderData - Order details
@@ -35,9 +20,6 @@ export const generateOrderPDF = (orderData) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   let yPos = 20;
-
-  // Use provided orderId or generate new one
-  const orderId = orderData.orderId || generateOrderId();
 
   // Header - Logo text
   doc.setFontSize(28);
@@ -49,7 +31,10 @@ export const generateOrderPDF = (orderData) => {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100);
   doc.text(BUSINESS.tagline + ' | ' + BUSINESS.since, pageWidth / 2, yPos, { align: 'center' });
-  yPos += 15;
+  yPos += 5;
+  doc.setFontSize(9);
+  doc.text(BUSINESS.phone + ' | ' + BUSINESS.area, pageWidth / 2, yPos, { align: 'center' });
+  yPos += 12;
 
   // Divider
   doc.setDrawColor(180);
@@ -62,37 +47,20 @@ export const generateOrderPDF = (orderData) => {
   doc.setFont('helvetica', 'bold');
   doc.text('Order ID:', 20, yPos);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(180, 142, 82); // Gold color
-  doc.text(orderId, 50, yPos);
+  doc.setTextColor(50, 50, 50);
+  doc.text(orderData.orderId || 'N/A', 50, yPos);
 
-  doc.setTextColor(0);
   doc.setFont('helvetica', 'bold');
-  doc.text('Date:', pageWidth - 65, yPos);
+  doc.setTextColor(0);
+  doc.text('Date:', 120, yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(format(new Date(), 'dd MMM yyyy'), pageWidth - 45, yPos);
-  yPos += 12;
-
-  // Expected Delivery Row
-  if (orderData.deliveryDate) {
-    doc.setFont('helvetica', 'bold');
-    doc.text('Expected Delivery:', 20, yPos);
-    doc.setFont('helvetica', 'normal');
-    let deliveryText = orderData.deliveryDate;
-    try {
-      deliveryText = format(new Date(orderData.deliveryDate), 'EEEE, MMMM d, yyyy');
-    } catch (e) {
-      // Use as-is if parsing fails
-    }
-    doc.text(deliveryText, 65, yPos);
-    yPos += 15;
-  }
+  doc.setTextColor(50, 50, 50);
+  doc.text(format(new Date(), 'dd MMM yyyy, hh:mm a'), 138, yPos);
+  yPos += 15;
 
   // Customer Details Section
-  const customerName = orderData.customerName || 'N/A';
-  const phone = orderData.phone || 'N/A';
-  const address = orderData.address || 'N/A';
-  
-  const addressLines = doc.splitTextToSize(`Address: ${address}`, pageWidth - 60);
+  const addressText = orderData.address || 'N/A';
+  const addressLines = doc.splitTextToSize(addressText, pageWidth - 70);
   const customerDetailsHeight = 45 + (addressLines.length * 5);
   
   doc.setFillColor(248, 248, 248);
@@ -101,21 +69,44 @@ export const generateOrderPDF = (orderData) => {
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0);
-  doc.text('Customer Details', 28, yPos + 5);
-  yPos += 15;
+  doc.text('Customer Details', 25, yPos + 3);
+  yPos += 14;
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Name: ${customerName}`, 28, yPos);
-  yPos += 8;
-  doc.text(`Phone: ${phone}`, 28, yPos);
-  yPos += 8;
-  doc.text(addressLines, 28, yPos);
-  yPos += (addressLines.length * 5) + 15;
+  
+  // Name
+  doc.setFont('helvetica', 'bold');
+  doc.text('Name:', 25, yPos);
+  doc.setFont('helvetica', 'normal');
+  doc.text(orderData.customerName || 'N/A', 55, yPos);
+  yPos += 7;
+  
+  // Phone
+  doc.setFont('helvetica', 'bold');
+  doc.text('Phone:', 25, yPos);
+  doc.setFont('helvetica', 'normal');
+  doc.text(orderData.phone || 'N/A', 55, yPos);
+  yPos += 7;
+  
+  // Address
+  doc.setFont('helvetica', 'bold');
+  doc.text('Address:', 25, yPos);
+  doc.setFont('helvetica', 'normal');
+  doc.text(addressLines, 55, yPos);
+  yPos += (addressLines.length * 5) + 5;
+
+  // Measurement Method
+  doc.setFont('helvetica', 'bold');
+  doc.text('Measurement:', 25, yPos);
+  doc.setFont('helvetica', 'normal');
+  doc.text(orderData.measurementMethod || 'Self-Provided', 55, yPos);
+  yPos += 15;
 
   // Order Details Section
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0);
   doc.text('Order Details', 20, yPos);
   yPos += 8;
 
@@ -124,175 +115,183 @@ export const generateOrderPDF = (orderData) => {
   doc.rect(20, yPos, pageWidth - 40, 8, 'F');
   doc.setTextColor(255);
   doc.setFontSize(9);
-  doc.text('Item', 25, yPos + 5.5);
-  doc.text('Description', 90, yPos + 5.5);
-  doc.text('Amount', pageWidth - 40, yPos + 5.5);
+  doc.text('Service', 25, yPos + 5.5);
+  doc.text('Type', 100, yPos + 5.5);
+  doc.text('Amount', pageWidth - 35, yPos + 5.5, { align: 'right' });
   yPos += 12;
 
   doc.setTextColor(0);
   doc.setFont('helvetica', 'normal');
 
   // Service/Item
-  const serviceName = orderData.serviceName || 'Tailoring Service';
-  const serviceType = orderData.bookingType === 'urgent' ? 'Urgent Order' : 'Standard';
-  const basePrice = orderData.basePrice || orderData.total || 0;
-  
-  doc.text(serviceName, 25, yPos);
-  doc.text(serviceType, 90, yPos);
-  doc.text(`Rs. ${basePrice.toLocaleString()}`, pageWidth - 40, yPos);
-  yPos += 10;
+  if (orderData.serviceName) {
+    doc.text(orderData.serviceName, 25, yPos);
+    doc.text(orderData.serviceType || 'Standard', 100, yPos);
+    doc.text('Rs. ' + (orderData.basePrice?.toLocaleString() || '0'), pageWidth - 35, yPos, { align: 'right' });
+    yPos += 8;
+  }
 
   // Add-ons
   if (orderData.addOns && orderData.addOns.length > 0) {
     orderData.addOns.forEach(addon => {
       doc.text(addon.name, 25, yPos);
-      doc.text('Add-on', 90, yPos);
-      doc.text(`Rs. ${(addon.price || 0).toLocaleString()}`, pageWidth - 40, yPos);
+      doc.text('Add-on', 100, yPos);
+      doc.text('Rs. ' + (addon.price?.toLocaleString() || '0'), pageWidth - 35, yPos, { align: 'right' });
       yPos += 7;
     });
   }
 
   // Customizations (if any)
   if (orderData.neckDesign) {
-    doc.text(`Neck Design: ${orderData.neckDesign}`, 25, yPos);
-    doc.text('Included', pageWidth - 40, yPos);
+    doc.text('Neck: ' + orderData.neckDesign, 25, yPos);
+    doc.text('Included', pageWidth - 35, yPos, { align: 'right' });
     yPos += 7;
   }
   if (orderData.sleeveStyle) {
-    doc.text(`Sleeve Style: ${orderData.sleeveStyle}`, 25, yPos);
-    doc.text('Included', pageWidth - 40, yPos);
+    doc.text('Sleeves: ' + orderData.sleeveStyle, 25, yPos);
+    doc.text('Included', pageWidth - 35, yPos, { align: 'right' });
+    yPos += 7;
+  }
+  if (orderData.fit) {
+    doc.text('Fit: ' + orderData.fit, 25, yPos);
+    doc.text('Included', pageWidth - 35, yPos, { align: 'right' });
     yPos += 7;
   }
 
-  yPos += 5;
+  yPos += 3;
 
   // Divider before totals
   doc.setDrawColor(200);
   doc.line(20, yPos, pageWidth - 20, yPos);
   yPos += 8;
 
-  // Totals
+  // Totals section
   doc.setFontSize(10);
   
-  // Urgent surcharge
-  const urgentSurcharge = orderData.urgentSurcharge || 0;
-  if (urgentSurcharge > 0) {
-    doc.text('Urgent Surcharge (+30%):', pageWidth - 85, yPos);
-    doc.text(`Rs. ${urgentSurcharge.toLocaleString()}`, pageWidth - 40, yPos);
+  if (orderData.urgentSurcharge > 0) {
+    doc.text('Urgent Surcharge (+30%):', 100, yPos);
+    doc.text('Rs. ' + orderData.urgentSurcharge.toLocaleString(), pageWidth - 35, yPos, { align: 'right' });
     yPos += 8;
   }
 
-  // Total
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  const total = orderData.total || orderData.totalAmount || 0;
-  doc.text('Total:', pageWidth - 85, yPos);
-  doc.text(`Rs. ${total.toLocaleString()}`, pageWidth - 40, yPos);
-  yPos += 12;
+  doc.setFontSize(11);
+  doc.text('Total Amount:', 100, yPos);
+  doc.text('Rs. ' + (orderData.total?.toLocaleString() || '0'), pageWidth - 35, yPos, { align: 'right' });
+  yPos += 10;
 
   // Advance Payment Details
-  const advanceAmount = orderData.advanceAmount || orderData.advanceRequired || 0;
-  if (advanceAmount > 0) {
+  if (orderData.advanceAmount > 0) {
     doc.setFillColor(255, 250, 240);
-    doc.rect(20, yPos - 3, pageWidth - 40, 35, 'F');
+    doc.rect(20, yPos - 3, pageWidth - 40, 28, 'F');
     doc.setDrawColor(201, 162, 39);
-    doc.rect(20, yPos - 3, pageWidth - 40, 35, 'S');
+    doc.rect(20, yPos - 3, pageWidth - 40, 28, 'S');
     
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(180, 142, 82);
-    doc.text('Payment Details', 28, yPos + 5);
+    doc.text('Advance Payment Required:', 25, yPos + 5);
+    doc.text('Rs. ' + orderData.advanceAmount.toLocaleString(), pageWidth - 35, yPos + 5, { align: 'right' });
     yPos += 12;
-    
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(`Advance Required (30%):`, 28, yPos);
-    doc.text(`Rs. ${advanceAmount.toLocaleString()}`, pageWidth - 45, yPos);
-    yPos += 7;
+    doc.text('Balance Due on Delivery:', 25, yPos + 5);
+    doc.text('Rs. ' + (orderData.balanceAmount?.toLocaleString() || '0'), pageWidth - 35, yPos + 5, { align: 'right' });
+    yPos += 20;
     
-    const balanceAmount = total - advanceAmount;
-    doc.text(`Balance Due on Delivery:`, 28, yPos);
-    doc.text(`Rs. ${balanceAmount.toLocaleString()}`, pageWidth - 45, yPos);
-    yPos += 15;
-    
-    doc.setTextColor(0);
+    // Payment note
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text('Pay via WhatsApp scanner from +91 93102 82351 or Cash/UPI during doorstep visit', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 10;
   }
 
-  // Measurement / Visit Details
   yPos += 5;
+
+  // Dates & Delivery Info
+  doc.setTextColor(0);
   doc.setFillColor(248, 248, 248);
-  doc.rect(20, yPos - 3, pageWidth - 40, 30, 'F');
+  doc.rect(20, yPos - 3, pageWidth - 40, 38, 'F');
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0);
-  doc.text('Appointment Details', 28, yPos + 5);
-  yPos += 12;
+  doc.text('Schedule & Delivery', 25, yPos + 5);
+  yPos += 14;
   
   doc.setFont('helvetica', 'normal');
-  const isTailorVisit = orderData.measurementMethod === 'tailor' || orderData.tailorAtDoorstep;
-  doc.text(`Measurement: ${isTailorVisit ? 'Tailor Visit at Doorstep' : 'Self-Provided'}`, 28, yPos);
-  yPos += 7;
+  doc.setFontSize(9);
   
-  if (orderData.bookingDate || orderData.tailorVisitDate) {
-    let visitDate = orderData.tailorVisitDate || orderData.bookingDate;
-    try {
-      visitDate = format(new Date(visitDate), 'EEEE, MMMM d, yyyy');
-    } catch (e) {}
-    doc.text(`${isTailorVisit ? 'Tailor Visit' : 'Pickup'} Date: ${visitDate}`, 28, yPos);
+  // Booking Date
+  if (orderData.bookingDate) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Booking Date:', 25, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.text(orderData.bookingDate, 70, yPos);
+    yPos += 7;
   }
+  
+  // Tailor Visit Date (if applicable)
+  if (orderData.tailorVisitDate) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Tailor Visit:', 25, yPos);
+    doc.setFont('helvetica', 'normal');
+    const visitDate = typeof orderData.tailorVisitDate === 'string' 
+      ? orderData.tailorVisitDate 
+      : format(new Date(orderData.tailorVisitDate), 'dd MMM yyyy');
+    doc.text(visitDate, 70, yPos);
+    yPos += 7;
+  }
+  
+  // Expected Delivery
+  doc.setFont('helvetica', 'bold');
+  doc.text('Expected Delivery:', 25, yPos);
+  doc.setFont('helvetica', 'normal');
+  doc.text(orderData.deliveryDate || 'To be confirmed after pickup', 70, yPos);
+  
+  // Order Type
+  doc.setFont('helvetica', 'bold');
+  doc.text('Order Type:', 120, yPos);
+  doc.setFont('helvetica', 'normal');
+  doc.text(orderData.bookingType === 'urgent' ? 'Urgent (Priority)' : 'Normal', 155, yPos);
   yPos += 15;
 
-  // Measurements (if self-provided)
+  // Measurements Section (if provided)
   if (orderData.measurements && Object.keys(orderData.measurements).some(k => orderData.measurements[k])) {
+    doc.setFillColor(248, 248, 248);
+    doc.rect(20, yPos - 3, pageWidth - 40, 30, 'F');
+    
     doc.setFont('helvetica', 'bold');
-    doc.text('Measurements (in inches):', 20, yPos);
-    yPos += 8;
+    doc.setFontSize(10);
+    doc.text('Measurements (in inches)', 25, yPos + 5);
+    yPos += 12;
     
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     
     const measurements = orderData.measurements;
-    const measurementLabels = {
-      bust: 'Bust/Chest',
-      waist: 'Waist',
-      hips: 'Hips',
-      shoulderWidth: 'Shoulder',
-      sleeveLength: 'Sleeve',
-      topLength: 'Top Length',
-      blouseLength: 'Blouse Length',
-      bottomLength: 'Bottom Length',
-      totalLength: 'Total Length',
-      height: 'Height'
-    };
+    const measLabels = [
+      ['Bust/Chest', measurements.bust],
+      ['Waist', measurements.waist],
+      ['Hips', measurements.hips],
+      ['Shoulder', measurements.shoulderWidth],
+      ['Sleeve', measurements.sleeveLength],
+      ['Top Length', measurements.topLength],
+      ['Bottom Length', measurements.bottomLength],
+      ['Height', measurements.height],
+    ].filter(m => m[1]);
     
-    let measurementText = [];
-    Object.keys(measurements).forEach(key => {
-      if (measurements[key]) {
-        const label = measurementLabels[key] || key;
-        measurementText.push(`${label}: ${measurements[key]}"`);
+    let xPos = 25;
+    measLabels.forEach((m, i) => {
+      if (i > 0 && i % 4 === 0) {
+        yPos += 7;
+        xPos = 25;
       }
+      doc.text(m[0] + ': ' + m[1], xPos, yPos);
+      xPos += 45;
     });
-    
-    // Display measurements in columns
-    const midPoint = Math.ceil(measurementText.length / 2);
-    measurementText.slice(0, midPoint).forEach((text, idx) => {
-      doc.text(text, 25, yPos + (idx * 6));
-      if (measurementText[midPoint + idx]) {
-        doc.text(measurementText[midPoint + idx], 100, yPos + (idx * 6));
-      }
-    });
-    yPos += (midPoint * 6) + 10;
+    yPos += 15;
   }
 
-  // Payment Note
-  if (advanceAmount > 0) {
-    yPos += 3;
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text('Note: Pay advance via QR scanner sent from our WhatsApp (+91 93102 82351) or in cash/UPI during tailor visit.', 20, yPos);
-    yPos += 10;
-  }
+  yPos += 5;
 
   // Footer
   doc.setDrawColor(180);
@@ -303,9 +302,8 @@ export const generateOrderPDF = (orderData) => {
   doc.setTextColor(100);
   doc.text('Thank you for choosing SLIQUES!', pageWidth / 2, yPos, { align: 'center' });
   yPos += 6;
-  doc.text(`Contact: ${BUSINESS.phone} | ${BUSINESS.area}`, pageWidth / 2, yPos, { align: 'center' });
-  yPos += 6;
-  doc.text('Free Pickup and Delivery | Free Alterations', pageWidth / 2, yPos, { align: 'center' });
+  doc.setFontSize(8);
+  doc.text('Free Pickup & Delivery | Free Alterations | ' + BUSINESS.website, pageWidth / 2, yPos, { align: 'center' });
 
   return doc;
 };
@@ -314,12 +312,8 @@ export const generateOrderPDF = (orderData) => {
  * Download the PDF
  */
 export const downloadOrderPDF = (orderData) => {
-  // Generate order ID if not provided
-  const orderId = orderData.orderId || orderData.id || generateOrderId();
-  const dataWithOrderId = { ...orderData, orderId };
-  
-  const doc = generateOrderPDF(dataWithOrderId);
-  const filename = `SLIQUES-Order-${orderId}.pdf`;
+  const doc = generateOrderPDF(orderData);
+  const filename = 'SLIQUES_Order_' + (orderData.orderId || 'summary') + '.pdf';
   doc.save(filename);
 };
 
@@ -327,10 +321,19 @@ export const downloadOrderPDF = (orderData) => {
  * Generate customizer summary PDF
  */
 export const generateCustomizerPDF = (customization, pricing, isUrgent) => {
-  const orderId = generateOrderId();
+  // Generate non-guessable order ID for customizer
+  const now = new Date();
+  const year = String(now.getFullYear()).slice(-2);
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let random = '';
+  for (let i = 0; i < 4; i++) {
+    random += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  const customOrderId = 'SLQ' + year + month + random + 'C1';
   
   const orderData = {
-    orderId,
+    orderId: customOrderId,
     serviceName: customization.baseOutfit?.name || 'Custom Design',
     serviceType: 'Customized',
     basePrice: customization.baseOutfit?.basePrice || 0,
@@ -341,6 +344,7 @@ export const generateCustomizerPDF = (customization, pricing, isUrgent) => {
     urgentSurcharge: pricing.urgentSurcharge || 0,
     total: pricing.total,
     advanceAmount: pricing.advanceAmount,
+    balanceAmount: pricing.balanceAmount,
     bookingType: isUrgent ? 'urgent' : 'normal',
   };
   
@@ -349,6 +353,6 @@ export const generateCustomizerPDF = (customization, pricing, isUrgent) => {
 
 export const downloadCustomizerPDF = (customization, pricing, isUrgent) => {
   const doc = generateCustomizerPDF(customization, pricing, isUrgent);
-  const orderId = generateOrderId();
-  doc.save(`SLIQUES-Custom-${orderId}.pdf`);
+  const timestamp = Date.now();
+  doc.save('SLIQUES_Custom_Design_' + timestamp + '.pdf');
 };

@@ -6,7 +6,7 @@ import { format, addDays, subDays } from 'date-fns';
 // Sample bookings - this simulates what would be stored in a database
 export const sampleBookings = [
   {
-    id: 'SLQ-2026-001',
+    id: 'SLQ2601XK7P01',
     customerName: 'Priya Sharma',
     phone: '+91 93102 82351',
     email: 'priya.sharma@email.com',
@@ -36,7 +36,7 @@ export const sampleBookings = [
     updatedAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
   },
   {
-    id: 'SLQ-2026-002',
+    id: 'SLQ2601NR3F02',
     customerName: 'Anjali Verma',
     phone: '9876543211',
     email: 'anjali.v@email.com',
@@ -61,7 +61,7 @@ export const sampleBookings = [
     updatedAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
   },
   {
-    id: 'SLQ-2026-003',
+    id: 'SLQ2601TH8M03',
     customerName: 'Meera Kapoor',
     phone: '9876543212',
     email: 'meera.k@email.com',

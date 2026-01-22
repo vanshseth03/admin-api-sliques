@@ -259,15 +259,17 @@ const Booking = () => {
         phone: completedBooking.phone,
         address: completedBooking.address,
         serviceName: completedBooking.serviceName,
+        serviceType: completedBooking.bookingType === 'urgent' ? 'Urgent Order' : 'Standard',
         basePrice: selectedService?.basePrice || 0,
-        bookingType: completedBooking.bookingType,
         urgentSurcharge: completedBooking.bookingType === 'urgent' ? Math.round((selectedService?.basePrice || 0) * 0.3) : 0,
         total: completedBooking.totalAmount,
-        advanceAmount: completedBooking.advanceAmount,
+        advanceAmount: completedBooking.advanceAmount || 0,
+        balanceAmount: completedBooking.totalAmount - (completedBooking.advanceAmount || 0),
+        bookingType: completedBooking.bookingType,
         deliveryDate: completedBooking.estimatedDelivery,
         bookingDate: completedBooking.bookingDate,
-        measurementMethod: completedBooking.measurementMethod,
-        tailorAtDoorstep: completedBooking.tailorAtDoorstep,
+        tailorVisitDate: completedBooking.tailorAtDoorstep ? completedBooking.selectedDate : null,
+        measurementMethod: completedBooking.tailorAtDoorstep ? 'Tailor Visit' : 'Self-Provided',
         measurements: completedBooking.measurements,
       });
     };
@@ -337,7 +339,7 @@ const Booking = () => {
                 Download Invoice
               </button>
               <a
-                href={`https://wa.me/919310282351?text=${encodeURIComponent(`Hi! I just booked ${completedBooking.serviceName} (ID: ${completedBooking.id}). Looking forward to it! 🪡`)}`}
+                href={`https://wa.me/919310282351?text=${encodeURIComponent(`Hi! I just booked ${completedBooking.serviceName} (ID: ${completedBooking.id}). Looking forward to it!`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-whatsapp"

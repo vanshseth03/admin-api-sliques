@@ -115,7 +115,7 @@ const OrderTracking = () => {
                   type="text"
                   value={orderId}
                   onChange={(e) => setOrderId(e.target.value)}
-                  placeholder="Order ID (e.g., SLQ-2026-001)"
+                  placeholder="Order ID (e.g., SLQ2601XK7P01)"
                   className="input-field pl-10 sm:pl-12 text-sm sm:text-base"
                 />
               </div>

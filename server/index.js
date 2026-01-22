@@ -247,25 +247,31 @@ app.post('/api/imagekit/upload', async (req, res) => {
 // ============ ORDER ROUTES ============
 
 // Create new order
+// Generate unique order ID: SLQ + YYMM + 4 random alphanumeric + 2 digit sequence
+const generateOrderId = async () => {
+  const now = new Date();
+  const year = String(now.getFullYear()).slice(-2);
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed confusing chars like 0,O,1,I
+  let random = '';
+  for (let i = 0; i < 4; i++) {
+    random += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  
+  // Get count of orders this month for sequence
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const orderCount = await Order.countDocuments({ createdAt: { $gte: monthStart } });
+  const sequence = String(orderCount + 1).padStart(2, '0');
+  
+  return `SLQ${year}${month}${random}${sequence}`;
+};
+
 app.post('/api/orders', async (req, res) => {
   try {
     const orderData = req.body;
     
-    // Generate unique order ID by finding the highest existing number
-    const lastOrder = await Order.findOne({}, { orderId: 1 })
-      .sort({ orderId: -1 })
-      .limit(1);
-    
-    let orderNumber = 1;
-    if (lastOrder && lastOrder.orderId) {
-      // Extract number from format "SLQ-0001"
-      const match = lastOrder.orderId.match(/SLQ-(\d+)/);
-      if (match) {
-        orderNumber = parseInt(match[1], 10) + 1;
-      }
-    }
-    
-    const orderId = `SLQ-${String(orderNumber).padStart(4, '0')}`;
+    // Generate unique non-guessable order ID
+    const orderId = await generateOrderId();
     
     // Upload custom neck image if present
     let customNeckImageUrl = null;
