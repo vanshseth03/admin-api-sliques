@@ -317,6 +317,9 @@ const Admin = () => {
                         Date
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-charcoal/70 uppercase tracking-wider">
+                        Measurement
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-charcoal/70 uppercase tracking-wider">
                         Type
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-charcoal/70 uppercase tracking-wider">
@@ -356,6 +359,19 @@ const Admin = () => {
                           </td>
                           <td className="px-4 py-4 text-sm text-charcoal">
                             {order.bookingDate}
+                          </td>
+                          <td className="px-4 py-4 text-sm text-charcoal">
+                            {order.measurementMethod === 'tailor' || order.tailorVisitDate
+                              ? (
+                                  order.tailorVisitDate 
+                                    ? (typeof order.tailorVisitDate === 'string' 
+                                        ? order.tailorVisitDate.split('T')[0]
+                                        : new Date(order.tailorVisitDate).toISOString().split('T')[0]
+                                      )
+                                    : 'Tailor'
+                                )
+                              : 'Self-measured'
+                            }
                           </td>
                           <td className="px-4 py-4">
                             <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${

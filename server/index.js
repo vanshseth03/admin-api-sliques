@@ -563,6 +563,29 @@ app.get('/api/available-dates', async (req, res) => {
   }
 });
 
+// Dev: Clear database (orders + push subscriptions)
+// Protected by header 'x-dev-secret' matching DEV_CLEAR_SECRET env var (or default)
+app.post('/api/dev/clear-database', async (req, res) => {
+  try {
+    const secret = req.header('x-dev-secret') || req.query.secret;
+    const ALLOWED = process.env.DEV_CLEAR_SECRET || 'dev-clear-123';
+    if (!secret || secret !== ALLOWED) {
+      return res.status(403).json({ error: 'Forbidden - invalid secret' });
+    }
+
+    const ordersDeleted = await Order.deleteMany({});
+    const subsDeleted = await PushSubscription.deleteMany({});
+
+    // Broadcast to admins that DB was cleared
+    broadcastToAdmins({ type: 'DB_CLEARED', timestamp: new Date() });
+
+    res.json({ success: true, ordersDeleted: ordersDeleted.deletedCount, subscriptionsDeleted: subsDeleted.deletedCount });
+  } catch (error) {
+    console.error('Clear DB error:', error);
+    res.status(500).json({ error: 'Failed to clear database' });
+  }
+});
+
 // Start server (only in non-serverless environments)
 if (!isServerless) {
   const PORT = process.env.PORT || 5000;
