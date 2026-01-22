@@ -23,15 +23,12 @@ const DatePicker = ({ selectedDate, onDateSelect, getDateAvailability }) => {
     setCurrentMonth(prev => addDays(endOfMonth(prev), 1));
   };
 
-  // Only disable past dates and today - tailor can always visit from tomorrow
-  // Also check if date has availability if callback provided
+  // Only disable past dates and today - allow selecting any future date.
+  // We intentionally do not block dates based on availability here so users
+  // can choose a preferred date; final booking will pick next available
+  // processing/delivery if needed.
   const isDateDisabled = (date) => {
-    if (isBefore(date, tomorrow)) return true;
-    if (getDateAvailability) {
-      const { hasSlots } = getDateAvailability(date);
-      return !hasSlots;
-    }
-    return false;
+    return isBefore(date, tomorrow);
   };
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
