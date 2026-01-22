@@ -1,11 +1,18 @@
 # SLIQUES - Premium Tailoring Boutique
 
-A complete responsive website for SLIQUES boutique serving Raj Nagar Extension. Built with React and Tailwind CSS.
+A contemporary boutique offering stylish, comfortable & elegant outfit designs for everyday confidence and special moments. Built with React and Tailwind CSS.
+
+## 📦 Repositories
+
+| Repository | URL |
+|------------|-----|
+| **Main Website** | https://github.com/vanshseth03/sliques |
+| **Admin API** | https://github.com/vanshseth03/admin-api-sliques |
 
 ## 🎨 Brand Overview
 
 - **Brand Name:** SLIQUES
-- **Tagline:** Boutique Tailoring, Crafted with Care
+- **Tagline:** Contemporary Boutique, Crafted with Care
 - **Service Area:** Raj Nagar Extension (exclusively)
 - **Primary Font:** Playfair Display (headings/logo)
 - **Secondary Font:** Inter (body/UI)

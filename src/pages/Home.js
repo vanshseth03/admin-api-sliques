@@ -52,11 +52,11 @@ const Home = () => {
               
               {/* Tagline */}
               <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-charcoal/70 font-light mb-3 sm:mb-4">
-                Boutique Tailoring, Crafted with Care
+                Contemporary Boutique, Crafted with Care
               </p>
               
               <p className="text-charcoal/60 text-sm sm:text-base md:text-lg max-w-lg mx-auto lg:mx-0 mb-6 sm:mb-8">
-                We limit bookings so each piece receives expert attention. Experience premium tailoring with free pickup & delivery.
+                A contemporary boutique offering stylish, comfortable & elegant outfit designs for everyday confidence and special moments. Premium tailoring with free pickup & delivery.
               </p>
 
               {/* CTAs */}
