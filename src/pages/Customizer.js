@@ -12,7 +12,7 @@ const Customizer = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderDetails, setOrderDetails] = useState(null);
-  const { calculatePrice, getNextAvailableNormalDate, getNextAvailableUrgentDate, createBooking, getRemainingSlots } = useBooking();
+  const { calculatePrice, getNextAvailableNormalDate, getNextAvailableUrgentDate, createBooking, getRemainingSlots, fetchEstimatedDelivery } = useBooking();
   
   // Customization state
   const [customization, setCustomization] = useState({
@@ -122,13 +122,7 @@ const Customizer = () => {
     }));
   };
 
-  // Fetch delivery dates on mount
-  useEffect(() => {
-    setDeliveryDates({
-      normal: getNextAvailableNormalDate(),
-      urgent: getNextAvailableUrgentDate(),
-    });
-  }, [getNextAvailableNormalDate, getNextAvailableUrgentDate]);
+  // NOTE: Delivery dates fetching moved to after getProcessingStartDate definition
 
   // Calculate current price - fabric removed, neck/sleeve/length are FREE
   const getCurrentPrice = useCallback(() => {
@@ -311,8 +305,8 @@ const Customizer = () => {
       advanceAmount: pricing.advanceAmount,
       balanceAmount: pricing.balanceAmount,
       bookingType: isUrgent ? 'urgent' : 'normal',
-      deliveryDate: deliveryDate ? format(deliveryDate, 'dd MMM yyyy') : 'TBD',
-      tailorVisitDate: measurementChoice === 'tailor' ? tailorDate : null,
+      deliveryDate: deliveryDate,
+      tailorVisitDate: measurementChoice === 'tailor' && tailorDate ? tailorDate : null,
       measurementMethod: measurementChoice,
       measurements: measurementChoice === 'self' ? measurements : null,
     });
@@ -355,6 +349,26 @@ const Customizer = () => {
     }
     return startOfDay(addDays(new Date(), 1));
   }, [measurementChoice, tailorDate]);
+
+  // Fetch delivery dates when processing start changes
+  useEffect(() => {
+    const fetchDates = async () => {
+      // For urgent, always calculate locally (36 hours from processing)
+      const urgentDate = addHours(getProcessingStartDate, 36);
+      
+      // For normal, fetch from API
+      const data = await fetchEstimatedDelivery(getProcessingStartDate);
+      const normalDate = data?.estimatedDelivery 
+        ? new Date(data.estimatedDelivery)
+        : addDays(getProcessingStartDate, 7);
+      
+      setDeliveryDates({
+        normal: normalDate,
+        urgent: urgentDate,
+      });
+    };
+    fetchDates();
+  }, [getProcessingStartDate, fetchEstimatedDelivery]);
 
   // Calculate delivery date from processing start
   const getDeliveryDate = (processingStart, isUrgentOrder) => {
@@ -955,7 +969,6 @@ const Customizer = () => {
                             <span className="font-medium text-charcoal text-sm sm:text-base">🔴 Urgent Order</span>
                           </div>
                           <p className="text-xs text-wine mt-0.5">+30% surcharge • Delivery in 36 hours from processing start</p>
-                          <p className="text-xs text-charcoal/50 mt-1">Max 2 urgent orders per day</p>
                         </div>
                       </label>
                     </div>

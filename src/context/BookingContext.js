@@ -8,7 +8,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'https://admin-api-sliques.verc
 // Business rules - configurable (internal - not shown to users)
 export const BOOKING_RULES = {
   MAX_NORMAL_PER_DAY: 4,
-  MAX_URGENT_PER_DAY: 4,
+  MAX_URGENT_PER_DAY: Infinity, // Unlimited urgent orders allowed
   URGENT_SURCHARGE_PERCENT: 30,
   URGENT_MIN_HOURS: 36,
   NORMAL_MIN_DAYS: 7, // 1 week minimum for normal orders
@@ -32,6 +32,7 @@ export function BookingProvider({ children }) {
   const [currentBooking, setCurrentBooking] = useState(null);
   const [availableDatesFromAPI, setAvailableDatesFromAPI] = useState([]);
   const [firstAvailableDate, setFirstAvailableDate] = useState(null);
+  const [estimatedDeliveryFromAPI, setEstimatedDeliveryFromAPI] = useState(null);
 
   // Fetch available dates from API
   const fetchAvailableDates = useCallback(async () => {
@@ -60,10 +61,30 @@ export function BookingProvider({ children }) {
     return null;
   }, []);
 
+  // Fetch estimated delivery date from API based on processing start
+  const fetchEstimatedDelivery = useCallback(async (processingStartDate = null) => {
+    try {
+      let url = `${API_URL}/api/estimated-delivery`;
+      if (processingStartDate) {
+        url += `?processingStart=${format(processingStartDate, 'yyyy-MM-dd')}`;
+      }
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setEstimatedDeliveryFromAPI(data.estimatedDelivery);
+        return data;
+      }
+    } catch (error) {
+      console.warn('Failed to fetch estimated delivery:', error.message);
+    }
+    return null;
+  }, []);
+
   // Fetch available dates on mount
   useEffect(() => {
     fetchAvailableDates();
-  }, [fetchAvailableDates]);
+    fetchEstimatedDelivery();
+  }, [fetchAvailableDates, fetchEstimatedDelivery]);
 
   // Get count of bookings for a specific date
   const getBookingCountForDate = useCallback((date) => {
@@ -304,8 +325,10 @@ export function BookingProvider({ children }) {
     getNextAvailableNormalDate,
     getNextAvailableUrgentDate,
     fetchAvailableDates,
+    fetchEstimatedDelivery,
     availableDatesFromAPI,
     firstAvailableDate,
+    estimatedDeliveryFromAPI,
     BOOKING_RULES,
   }), [
     bookings,
@@ -322,8 +345,10 @@ export function BookingProvider({ children }) {
     getNextAvailableNormalDate,
     getNextAvailableUrgentDate,
     fetchAvailableDates,
+    fetchEstimatedDelivery,
     availableDatesFromAPI,
     firstAvailableDate,
+    estimatedDeliveryFromAPI,
   ]);
 
   return (

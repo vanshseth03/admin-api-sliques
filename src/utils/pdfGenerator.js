@@ -63,8 +63,8 @@ export const generateOrderPDF = (orderData) => {
 
   // Customer Details Section
   const addressText = orderData.address || 'N/A';
-  const addressLines = doc.splitTextToSize(addressText, pageWidth - 70);
-  const customerDetailsHeight = 38 + (addressLines.length * 5);
+  const addressLines = doc.splitTextToSize(addressText, pageWidth - 80);
+  const customerDetailsHeight = 45 + (addressLines.length * 6);
   
   doc.setFillColor(248, 248, 248);
   doc.rect(20, yPos - 5, pageWidth - 40, customerDetailsHeight, 'F');
@@ -72,31 +72,31 @@ export const generateOrderPDF = (orderData) => {
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0);
-  doc.text('Customer Details', 25, yPos + 3);
-  yPos += 14;
+  doc.text('Customer Details', 25, yPos + 5);
+  yPos += 16;
 
   doc.setFontSize(10);
   
   // Name
   doc.setFont('helvetica', 'bold');
-  doc.text('Name:', 25, yPos);
+  doc.text('Name:', 30, yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(orderData.customerName || 'N/A', 50, yPos);
-  yPos += 7;
+  doc.text(orderData.customerName || 'N/A', 60, yPos);
+  yPos += 8;
   
   // Phone
   doc.setFont('helvetica', 'bold');
-  doc.text('Phone:', 25, yPos);
+  doc.text('Phone:', 30, yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(orderData.phone || 'N/A', 50, yPos);
-  yPos += 7;
+  doc.text(orderData.phone || 'N/A', 60, yPos);
+  yPos += 8;
   
   // Address
   doc.setFont('helvetica', 'bold');
-  doc.text('Address:', 25, yPos);
+  doc.text('Address:', 30, yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(addressLines, 50, yPos);
-  yPos += (addressLines.length * 5) + 12;
+  doc.text(addressLines, 60, yPos);
+  yPos += (addressLines.length * 6) + 12;
 
   // Order Details Section
   doc.setFontSize(11);
@@ -204,24 +204,28 @@ export const generateOrderPDF = (orderData) => {
     yPos += 12;
   }
 
-  yPos += 5;
+  yPos += 8;
 
-  // Schedule & Delivery Section
+  // Schedule & Delivery Section (Always display)
   doc.setTextColor(0);
-  doc.setFillColor(248, 248, 248);
+  doc.setFillColor(245, 245, 250);
   
   // Calculate box height based on content
-  let scheduleBoxHeight = 52;
+  let scheduleBoxHeight = 58;
   if (orderData.measurementMethod === 'tailor' || orderData.tailorVisitDate) {
-    scheduleBoxHeight += 8;
+    scheduleBoxHeight += 10;
   }
   
   doc.rect(20, yPos - 3, pageWidth - 40, scheduleBoxHeight, 'F');
+  doc.setDrawColor(200, 200, 210);
+  doc.rect(20, yPos - 3, pageWidth - 40, scheduleBoxHeight, 'S');
   
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('Schedule & Delivery', 25, yPos + 5);
-  yPos += 14;
+  doc.setTextColor(60, 60, 120);
+  doc.text('Schedule & Delivery Information', 25, yPos + 6);
+  doc.setTextColor(0);
+  yPos += 16;
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);

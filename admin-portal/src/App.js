@@ -665,6 +665,14 @@ function OrderDetail({ order, onClose, onStatusUpdate }) {
                     : 'N/A'}
                 </span>
               </div>
+              {order.measurementMethod === 'tailor' && order.tailorVisitDate && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-400">Tailor Visit Date</span>
+                  <span className="text-sm font-medium text-blue-400">
+                    {format(new Date(order.tailorVisitDate), 'EEEE, dd MMM yyyy')}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-400">Expected Delivery</span>
                 <span className="text-sm font-medium text-[#C9A227]">

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { format, addDays, addHours, startOfDay } from 'date-fns';
 import { Calendar, AlertCircle, Check, MapPin, CreditCard, Info, ChevronRight, User, Phone, Ruler, Home, Download, MessageCircle, ArrowLeft, Clock, Scissors } from 'lucide-react';
@@ -18,9 +18,12 @@ const Booking = () => {
     isUrgentAllowed,
     calculatePrice,
     createBooking,
+    fetchEstimatedDelivery,
+    estimatedDeliveryFromAPI,
   } = useBooking();
 
   const [step, setStep] = useState(1);
+  const [apiEstimatedDelivery, setApiEstimatedDelivery] = useState(null);
   const [bookingData, setBookingData] = useState({
     serviceId: preSelectedService || '',
     bookingType: 'normal',
@@ -148,6 +151,31 @@ const Booking = () => {
     return startOfDay(addDays(new Date(), 1));
   }, [bookingData.tailorAtDoorstep, bookingData.selectedDate]);
 
+  // Fetch estimated delivery from API when processing start changes
+  useEffect(() => {
+    const fetchDelivery = async () => {
+      if (bookingData.bookingType === 'normal') {
+        const data = await fetchEstimatedDelivery(currentProcessingStart);
+        if (data?.estimatedDelivery) {
+          setApiEstimatedDelivery(new Date(data.estimatedDelivery));
+        }
+      } else {
+        // For urgent orders, use local calculation (36 hours from processing)
+        setApiEstimatedDelivery(null);
+      }
+    };
+    fetchDelivery();
+  }, [currentProcessingStart, bookingData.bookingType, fetchEstimatedDelivery]);
+
+  // Get the effective estimated delivery date (API for normal, calculated for urgent)
+  const effectiveEstimatedDelivery = useMemo(() => {
+    if (bookingData.bookingType === 'urgent') {
+      return getDeliveryDate(currentProcessingStart, true);
+    }
+    // Use API-based delivery for normal orders, fallback to calculated
+    return apiEstimatedDelivery || getDeliveryDate(currentProcessingStart, false);
+  }, [bookingData.bookingType, currentProcessingStart, apiEstimatedDelivery]);
+
   // Check availability for processing start date
   const processingDateSlots = useMemo(() => {
     return getRemainingSlots(currentProcessingStart);
@@ -207,9 +235,10 @@ const Booking = () => {
     setIsSubmitting(true);
     
     try {
-      // Calculate delivery based on processing start date
-      const deliveryDate = getDeliveryDate(currentProcessingStart, bookingData.bookingType === 'urgent');
-      const estimatedDelivery = deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : format(addDays(new Date(), 7), 'yyyy-MM-dd');
+      // Use the effective estimated delivery (from API for normal, calculated for urgent)
+      const estimatedDelivery = effectiveEstimatedDelivery 
+        ? format(effectiveEstimatedDelivery, 'yyyy-MM-dd') 
+        : format(addDays(new Date(), 7), 'yyyy-MM-dd');
       
       // Determine measurement/visit date - this is for tailor visit if selected
       const tailorVisitDate = bookingData.tailorAtDoorstep && bookingData.selectedDate 
@@ -262,7 +291,7 @@ const Booking = () => {
         phone: completedBooking.phone,
         address: completedBooking.address,
         serviceName: completedBooking.serviceName,
-        serviceType: completedBooking.bookingType === 'urgent' ? 'Urgent Order' : 'Standard',
+        serviceType: completedBooking.bookingType === 'urgent' ? 'Urgent Order' : 'Normal Order',
         basePrice: selectedService?.basePrice || 0,
         urgentSurcharge: completedBooking.bookingType === 'urgent' ? Math.round((selectedService?.basePrice || 0) * 0.3) : 0,
         total: completedBooking.totalAmount,
@@ -702,7 +731,7 @@ const Booking = () => {
                             <Check className="w-4 h-4 text-gold" />
                             <span className="text-charcoal/70">Estimated Delivery:</span>
                             <span className={`font-medium ${bookingData.bookingType === 'urgent' ? 'text-wine' : 'text-charcoal'}`}>
-                              {format(getDeliveryDate(currentProcessingStart, bookingData.bookingType === 'urgent'), 'EEEE, MMM d')}
+                              {effectiveEstimatedDelivery ? format(effectiveEstimatedDelivery, 'EEEE, MMM d') : 'Calculating...'}
                               {bookingData.bookingType === 'urgent' ? ' (36 hours)' : ' (approx 7-14 days)'}
                             </span>
                           </div>
@@ -800,7 +829,7 @@ const Booking = () => {
                           <Check className="w-4 h-4 text-gold" />
                           <span className="text-charcoal/70">Estimated Delivery:</span>
                           <span className={`font-medium ${bookingData.bookingType === 'urgent' ? 'text-wine' : 'text-charcoal'}`}>
-                            {format(getDeliveryDate(currentProcessingStart, bookingData.bookingType === 'urgent'), 'EEEE, MMM d')}
+                            {effectiveEstimatedDelivery ? format(effectiveEstimatedDelivery, 'EEEE, MMM d') : 'Calculating...'}
                             {bookingData.bookingType === 'urgent' ? ' (36 hours)' : ' (approx 7-14 days)'}
                           </span>
                         </div>
@@ -861,7 +890,7 @@ const Booking = () => {
                       <div className="flex justify-between border-t border-charcoal/10 pt-3 mt-3">
                         <span className="text-charcoal/70">Estimated Delivery</span>
                         <span className="text-gold font-medium">
-                          {format(getDeliveryDate(currentProcessingStart, bookingData.bookingType === 'urgent'), 'EEE, dd MMM yyyy')}
+                          {effectiveEstimatedDelivery ? format(effectiveEstimatedDelivery, 'EEE, dd MMM yyyy') : 'Calculating...'}
                         </span>
                       </div>
                     </div>
@@ -936,7 +965,7 @@ const Booking = () => {
                       />
                       <div>
                         <span className="text-sm text-charcoal">
-                          I agree to the <Link to="/faq" className="text-gold hover:underline">Terms & Conditions</Link>
+                          I agree to the Terms & Conditions mentioned above
                           {pricing.advanceAmount > 0 && " and understand that advance payment is non-refundable in case of cancellation"}.
                         </span>
                       </div>
