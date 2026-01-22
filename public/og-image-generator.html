@@ -1,0 +1,141 @@
+<!-- 
+  OG Image Generator for SLIQUES
+  Open this in a browser and take a screenshot at 1200x630 pixels
+  Save as og-image.png in the public folder
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1200px;
+      height: 630px;
+      background: linear-gradient(135deg, #FBF9F6 0%, #F5F3F0 100%);
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Decorative pattern */
+    .pattern {
+      position: absolute;
+      inset: 0;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23111317' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    
+    /* Gold accent blurs */
+    .blur-1 {
+      position: absolute;
+      top: -100px;
+      left: -100px;
+      width: 400px;
+      height: 400px;
+      background: rgba(201, 162, 39, 0.15);
+      border-radius: 50%;
+      filter: blur(80px);
+    }
+    .blur-2 {
+      position: absolute;
+      bottom: -100px;
+      right: -100px;
+      width: 500px;
+      height: 500px;
+      background: rgba(201, 162, 39, 0.1);
+      border-radius: 50%;
+      filter: blur(100px);
+    }
+    
+    .content {
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+    
+    .scissors {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: #C9A227;
+    }
+    
+    .brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 96px;
+      font-weight: 600;
+      color: #111317;
+      letter-spacing: 0.2em;
+      margin-bottom: 10px;
+    }
+    
+    .gold-line {
+      width: 100px;
+      height: 3px;
+      background: #C9A227;
+      margin: 0 auto 25px;
+    }
+    
+    .tagline {
+      font-size: 24px;
+      color: #C9A227;
+      letter-spacing: 0.15em;
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+    
+    .description {
+      font-size: 20px;
+      color: #555;
+      max-width: 700px;
+      line-height: 1.5;
+    }
+    
+    .services {
+      margin-top: 30px;
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      font-size: 16px;
+      color: #777;
+    }
+    
+    .services span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .dot {
+      color: #C9A227;
+    }
+  </style>
+</head>
+<body>
+  <div class="pattern"></div>
+  <div class="blur-1"></div>
+  <div class="blur-2"></div>
+  
+  <div class="content">
+    <div class="scissors">✂️</div>
+    <div class="brand">SLIQUES</div>
+    <div class="gold-line"></div>
+    <div class="tagline">TAILORING AT YOUR DOORSTEP</div>
+    <div class="description">
+      Contemporary boutique crafting stylish, comfortable & elegant outfits<br>
+      for everyday confidence and special moments
+    </div>
+    <div class="services">
+      <span>🚚 Free Pickup & Delivery</span>
+      <span class="dot">✦</span>
+      <span>👗 Custom Outfits</span>
+      <span class="dot">✦</span>
+      <span>👰 Bridal Wear</span>
+    </div>
+  </div>
+</body>
+</html>
