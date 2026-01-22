@@ -454,21 +454,23 @@ const Customizer = () => {
                   <React.Fragment key={s}>
                     <button
                       onClick={() => {
-                        if (s < step) {
+                        if (s < step && !orderComplete) {
                           setStep(s);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }
                       }}
-                      disabled={s > step}
+                      disabled={s > step || orderComplete}
                       className={`flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full text-[10px] sm:text-xs font-medium transition-all ${
-                        s === step 
+                        orderComplete
+                          ? 'bg-gold text-charcoal'
+                          : s === step 
                           ? 'bg-charcoal text-ivory' 
                           : s < step 
                           ? 'bg-gold text-charcoal cursor-pointer hover:bg-gold-dark' 
                           : 'bg-charcoal/10 text-charcoal/40 cursor-not-allowed'
                       }`}
                     >
-                      {s < step ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : s}
+                      {orderComplete || s < step ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : s}
                     </button>
                     {s < 5 && (
                       <div className={`flex-1 h-0.5 mx-1 rounded ${
@@ -828,10 +830,6 @@ const Customizer = () => {
                         <DatePicker
                           selectedDate={tailorDate}
                           onDateSelect={(date) => setTailorDate(date)}
-                          getDateAvailability={(date) => {
-                            const slots = getRemainingSlots(date);
-                            return { hasSlots: slots.normal > 0, slotsLeft: slots.normal };
-                          }}
                         />
                       </div>
 
@@ -850,7 +848,6 @@ const Customizer = () => {
                             <span className="text-charcoal/70">Estimated Delivery:</span>
                             <span className={`font-medium ${isUrgent ? 'text-wine' : 'text-charcoal'}`}>
                               {format(getDeliveryDate(getProcessingStartDate, isUrgent), 'EEEE, MMM d')}
-                              {isUrgent ? ' (36 hours)' : ' (approx 7-14 days)'}
                             </span>
                           </div>
                           <p className="text-xs text-charcoal/60 mt-2">

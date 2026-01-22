@@ -220,12 +220,9 @@ export function BookingProvider({ children }) {
     // Slots are checked for display purposes, but we don't block booking
     // The delivery date is automatically calculated based on availability
     
-    // Generate booking ID (local fallback) - simple format SLQ + YYMM + 3 digits
-    const now = new Date();
-    const year = String(now.getFullYear()).slice(-2);
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const sequence = String(bookings.length + 1).padStart(3, '0');
-    const bookingId = `SLQ${year}${month}${sequence}`;
+    // Generate booking ID (local fallback) - simple format SLQ + 4 digits
+    const sequence = String(bookings.length + 1).padStart(4, '0');
+    const bookingId = `SLQ${sequence}`;
     
     const newBooking = {
       id: bookingId,

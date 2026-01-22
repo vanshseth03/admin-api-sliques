@@ -862,7 +862,6 @@ const Booking = () => {
                         <span className="text-charcoal/70">Estimated Delivery</span>
                         <span className="text-gold font-medium">
                           {format(getDeliveryDate(currentProcessingStart, bookingData.bookingType === 'urgent'), 'EEE, dd MMM yyyy')}
-                          {bookingData.bookingType === 'urgent' ? ' (36h)' : ' (≤7 days)'}
                         </span>
                       </div>
                     </div>

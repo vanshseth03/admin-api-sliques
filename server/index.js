@@ -247,18 +247,13 @@ app.post('/api/imagekit/upload', async (req, res) => {
 // ============ ORDER ROUTES ============
 
 // Create new order
-// Generate unique order ID: SLQ + YYMM + 3 digit sequence (e.g., SLQ2601003)
+// Generate unique order ID: SLQ + 4 digit sequence (e.g., SLQ1003)
 const generateOrderId = async () => {
-  const now = new Date();
-  const year = String(now.getFullYear()).slice(-2);
-  const month = String(now.getMonth() + 1).padStart(2, '0');
+  // Get total count of all orders
+  const orderCount = await Order.countDocuments();
+  const sequence = String(orderCount + 1).padStart(4, '0');
   
-  // Get count of orders this month for sequence
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const orderCount = await Order.countDocuments({ createdAt: { $gte: monthStart } });
-  const sequence = String(orderCount + 1).padStart(3, '0');
-  
-  return `SLQ${year}${month}${sequence}`;
+  return `SLQ${sequence}`;
 };
 
 app.post('/api/orders', async (req, res) => {
