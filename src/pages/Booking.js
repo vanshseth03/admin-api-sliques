@@ -254,18 +254,21 @@ const Booking = () => {
   if (bookingComplete && completedBooking) {
     const handleDownloadInvoice = () => {
       downloadOrderPDF({
-        id: completedBooking.id,
+        orderId: completedBooking.id,
         customerName: completedBooking.customerName,
         phone: completedBooking.phone,
         address: completedBooking.address,
-        items: [{
-          name: completedBooking.serviceName,
-          price: selectedService?.basePrice || 0,
-          isUrgent: completedBooking.bookingType === 'urgent',
-        }],
+        serviceName: completedBooking.serviceName,
+        basePrice: selectedService?.basePrice || 0,
+        bookingType: completedBooking.bookingType,
+        urgentSurcharge: completedBooking.bookingType === 'urgent' ? Math.round((selectedService?.basePrice || 0) * 0.3) : 0,
         total: completedBooking.totalAmount,
-        advanceRequired: completedBooking.advanceAmount,
+        advanceAmount: completedBooking.advanceAmount,
         deliveryDate: completedBooking.estimatedDelivery,
+        bookingDate: completedBooking.bookingDate,
+        measurementMethod: completedBooking.measurementMethod,
+        tailorAtDoorstep: completedBooking.tailorAtDoorstep,
+        measurements: completedBooking.measurements,
       });
     };
 
