@@ -215,26 +215,17 @@ export function BookingProvider({ children }) {
     const dateStr = format(new Date(bookingData.bookingDate), 'yyyy-MM-dd');
     const bookingType = bookingData.bookingType || 'normal';
     
-    // Validate slot availability
+    // Check slot availability - if not available, use next available date
     const slots = getRemainingSlots(new Date(bookingData.bookingDate));
-    if (bookingType === 'normal' && slots.normal <= 0) {
-      throw new Error('No normal booking slots available for this date');
-    }
-    if (bookingType === 'urgent' && slots.urgent <= 0) {
-      throw new Error('No urgent booking slots available for this date');
-    }
+    // Slots are checked for display purposes, but we don't block booking
+    // The delivery date is automatically calculated based on availability
     
-    // Generate booking ID (local fallback) - non-guessable format
+    // Generate booking ID (local fallback) - simple format SLQ + YYMM + 3 digits
     const now = new Date();
     const year = String(now.getFullYear()).slice(-2);
     const month = String(now.getMonth() + 1).padStart(2, '0');
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let random = '';
-    for (let i = 0; i < 4; i++) {
-      random += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    const sequence = String(bookings.length + 1).padStart(2, '0');
-    const bookingId = `SLQ${year}${month}${random}${sequence}`;
+    const sequence = String(bookings.length + 1).padStart(3, '0');
+    const bookingId = `SLQ${year}${month}${sequence}`;
     
     const newBooking = {
       id: bookingId,

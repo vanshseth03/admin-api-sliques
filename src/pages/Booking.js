@@ -211,10 +211,10 @@ const Booking = () => {
       const deliveryDate = getDeliveryDate(currentProcessingStart, bookingData.bookingType === 'urgent');
       const estimatedDelivery = deliveryDate ? format(deliveryDate, 'yyyy-MM-dd') : format(addDays(new Date(), 7), 'yyyy-MM-dd');
       
-      // Determine measurement/visit date
-      const measurementDate = bookingData.tailorAtDoorstep && bookingData.selectedDate 
-        ? bookingData.selectedDate 
-        : new Date();
+      // Determine measurement/visit date - this is for tailor visit if selected
+      const tailorVisitDate = bookingData.tailorAtDoorstep && bookingData.selectedDate 
+        ? format(bookingData.selectedDate, 'yyyy-MM-dd')
+        : null;
       
       // Map measurements to the format expected by admin portal  
       const measurementsData = !bookingData.tailorAtDoorstep ? {
@@ -231,7 +231,8 @@ const Booking = () => {
         ...bookingData,
         measurements: measurementsData,
         measurementMethod: bookingData.tailorAtDoorstep ? 'tailor' : 'self',
-        bookingDate: format(measurementDate, 'yyyy-MM-dd'),
+        tailorVisitDate: tailorVisitDate,
+        bookingDate: format(new Date(), 'yyyy-MM-dd'), // Today's date - when booking was made
         processingStartDate: format(currentProcessingStart, 'yyyy-MM-dd'),
         preferredSlot: 'Flexible',
         estimatedDelivery,
@@ -243,6 +244,8 @@ const Booking = () => {
       
       setCompletedBooking(newBooking);
       setBookingComplete(true);
+      // Scroll to top to show confirmation
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       setErrors({ submit: error.message });
     } finally {
@@ -267,9 +270,8 @@ const Booking = () => {
         balanceAmount: completedBooking.totalAmount - (completedBooking.advanceAmount || 0),
         bookingType: completedBooking.bookingType,
         deliveryDate: completedBooking.estimatedDelivery,
-        bookingDate: completedBooking.bookingDate,
-        tailorVisitDate: completedBooking.tailorAtDoorstep ? completedBooking.selectedDate : null,
-        measurementMethod: completedBooking.tailorAtDoorstep ? 'Tailor Visit' : 'Self-Provided',
+        tailorVisitDate: completedBooking.tailorVisitDate,
+        measurementMethod: completedBooking.measurementMethod || (completedBooking.tailorAtDoorstep ? 'tailor' : 'self'),
         measurements: completedBooking.measurements,
       });
     };
@@ -892,7 +894,7 @@ const Booking = () => {
                       {pricing.advanceAmount > 0 && (
                         <li className="flex items-start gap-2">
                           <span className="text-gold-dark font-bold">•</span>
-                          <span><strong>Advance Required:</strong> ₹{pricing.advanceAmount} advance payment is mandatory. Advance is non-refundable in case of cancellation.</span>
+                          <span><strong>Advance Required:</strong> ₹{pricing.advanceAmount} advance payment (non-refundable). Pay via QR scanner or to the {bookingData.tailorAtDoorstep ? 'tailor during visit' : 'pickup boy'}.</span>
                         </li>
                       )}
                     </ul>
@@ -956,7 +958,7 @@ const Booking = () => {
                         <h3 className="font-medium text-charcoal">Advance Payment Required</h3>
                       </div>
                       <p className="text-sm text-charcoal/70 mb-4">
-                        This service requires lining/external materials. Pay 30% advance to confirm.
+                        This service requires lining/external materials. Pay 30% advance via QR scanner or to the {bookingData.tailorAtDoorstep ? 'tailor during visit' : 'pickup boy'}.
                       </p>
                       <div className="text-center bg-white rounded-sm p-4">
                         <span className="text-charcoal/60 text-sm">Advance Amount</span>

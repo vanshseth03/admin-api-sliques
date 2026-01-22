@@ -247,7 +247,8 @@ const Customizer = () => {
         serviceName: customization.baseOutfit?.name,
         serviceType: 'custom',
         bookingType: isUrgent ? 'urgent' : 'normal',
-        bookingDate: format(deliveryDate, 'yyyy-MM-dd'),
+        bookingDate: format(new Date(), 'yyyy-MM-dd'), // Today's date - when booking was made
+        estimatedDelivery: format(deliveryDate, 'yyyy-MM-dd'),
         // Add measurements and method
         measurements: measurementsData,
         measurementMethod: measurementChoice,
@@ -281,6 +282,8 @@ const Customizer = () => {
         deliveryDate: format(deliveryDate, 'dd MMM yyyy'),
       });
       setOrderComplete(true);
+      // Scroll to top to show confirmation
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       alert(error.message);
     } finally {
@@ -288,11 +291,11 @@ const Customizer = () => {
     }
   };
 
-  // Download PDF invoice
+  // Download PDF invoice - matches Book Slot format
   const handleDownloadPDF = () => {
     const deliveryDate = isUrgent ? deliveryDates.urgent : deliveryDates.normal;
     downloadOrderPDF({
-      orderId: orderDetails?.orderId || `CUSTOM-${Date.now()}`,
+      orderId: orderDetails?.orderId || orderDetails?.id,
       customerName: bookingForm.name,
       phone: bookingForm.phone,
       address: bookingForm.address,
@@ -309,6 +312,9 @@ const Customizer = () => {
       balanceAmount: pricing.balanceAmount,
       bookingType: isUrgent ? 'urgent' : 'normal',
       deliveryDate: deliveryDate ? format(deliveryDate, 'dd MMM yyyy') : 'TBD',
+      tailorVisitDate: measurementChoice === 'tailor' ? tailorDate : null,
+      measurementMethod: measurementChoice,
+      measurements: measurementChoice === 'self' ? measurements : null,
     });
   };
 
@@ -447,13 +453,19 @@ const Customizer = () => {
                 {[1, 2, 3, 4, 5].map((s) => (
                   <React.Fragment key={s}>
                     <button
-                      onClick={() => s <= step && setStep(s)}
+                      onClick={() => {
+                        if (s < step) {
+                          setStep(s);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                      disabled={s > step}
                       className={`flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full text-[10px] sm:text-xs font-medium transition-all ${
                         s === step 
                           ? 'bg-charcoal text-ivory' 
                           : s < step 
-                          ? 'bg-gold text-charcoal cursor-pointer' 
-                          : 'bg-charcoal/10 text-charcoal/40'
+                          ? 'bg-gold text-charcoal cursor-pointer hover:bg-gold-dark' 
+                          : 'bg-charcoal/10 text-charcoal/40 cursor-not-allowed'
                       }`}
                     >
                       {s < step ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : s}
@@ -1008,13 +1020,13 @@ const Customizer = () => {
                   <div className="bg-gold/10 rounded-sm p-3 sm:p-4 mb-4 sm:mb-6">
                     <p className="text-xs sm:text-sm text-charcoal">
                       <strong>Estimated Delivery:</strong>{' '}
-                      {measurementChoice === 'tailor' && tailorDate
-                        ? format(getDeliveryDate(tailorDate, isUrgent), 'EEEE, MMM d, yyyy')
-                        : format(getDeliveryDate(new Date(), isUrgent), 'EEEE, MMM d, yyyy')
+                      {isUrgent 
+                        ? format(deliveryDates.urgent || addHours(getProcessingStartDate, 36), 'EEEE, MMM d, yyyy')
+                        : format(deliveryDates.normal || addDays(getProcessingStartDate, 7), 'EEEE, MMM d, yyyy')
                       }
                       <br />
                       <span className="text-charcoal/60">
-                        ({isUrgent ? '~36 hours' : '7 days'} after measurement {measurementChoice === 'tailor' ? 'visit' : 'confirmation'})
+                        ({isUrgent ? '~36 hours' : '7 days'} after processing starts)
                       </span>
                     </p>
                   </div>
@@ -1123,7 +1135,7 @@ const Customizer = () => {
                       {pricing.advanceAmount > 0 && (
                         <li className="flex items-start gap-2">
                           <span className="text-gold-dark">•</span>
-                          <span><strong>Advance Payment:</strong> ₹{pricing.advanceAmount} advance is required for this order. Advance is non-refundable.</span>
+                          <span><strong>Advance Payment:</strong> ₹{pricing.advanceAmount} advance is required (non-refundable). Pay via QR scanner or to the {measurementChoice === 'tailor' ? 'tailor during visit' : 'pickup boy'}.</span>
                         </li>
                       )}
                       <li className="flex items-start gap-2">
