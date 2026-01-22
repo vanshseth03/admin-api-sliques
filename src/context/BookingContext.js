@@ -224,8 +224,17 @@ export function BookingProvider({ children }) {
       throw new Error('No urgent booking slots available for this date');
     }
     
-    // Generate booking ID (local fallback)
-    const bookingId = `SLQ-${new Date().getFullYear()}-${String(bookings.length + 1).padStart(3, '0')}`;
+    // Generate booking ID (local fallback) - non-guessable format
+    const now = new Date();
+    const year = String(now.getFullYear()).slice(-2);
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let random = '';
+    for (let i = 0; i < 4; i++) {
+      random += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const sequence = String(bookings.length + 1).padStart(2, '0');
+    const bookingId = `SLQ${year}${month}${random}${sequence}`;
     
     const newBooking = {
       id: bookingId,

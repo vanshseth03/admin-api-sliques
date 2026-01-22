@@ -210,8 +210,19 @@ export const downloadOrderPDF = (orderData) => {
  * Generate customizer summary PDF
  */
 export const generateCustomizerPDF = (customization, pricing, isUrgent) => {
+  // Generate non-guessable order ID for customizer
+  const now = new Date();
+  const year = String(now.getFullYear()).slice(-2);
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let random = '';
+  for (let i = 0; i < 4; i++) {
+    random += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  const customOrderId = `SLQ${year}${month}${random}C1`;
+  
   const orderData = {
-    orderId: `CUSTOM-${Date.now()}`,
+    orderId: customOrderId,
     serviceName: customization.baseOutfit?.name || 'Custom Design',
     serviceType: 'Customized',
     basePrice: customization.baseOutfit?.basePrice || 0,
