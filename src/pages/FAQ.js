@@ -121,20 +121,28 @@ const FAQ = () => {
       icon: CreditCard,
       faqs: [
         {
-          q: 'When do I need to pay advance?',
-          a: 'Advance payment (30%) is required only for orders that need lining, padding, or other materials that we need to purchase. Simple stitching work does not require advance payment.'
+          q: 'Why is advance payment required?',
+          a: 'For orders requiring lining, padding, buttons, or other materials, we need to purchase these items upfront. The 30% advance helps us procure quality materials for your outfit. Simple stitching work that doesn\'t need additional materials does not require advance.'
         },
         {
-          q: 'How will I pay the advance?',
-          a: 'We will send you a payment QR code/scanner via WhatsApp for convenient advance payment through UPI or bank transfer.'
+          q: 'When do I need to pay advance?',
+          a: 'Advance payment (30%) is required only for orders that need lining, padding, or other materials that we need to purchase. This is communicated clearly during booking and on your invoice.'
+        },
+        {
+          q: 'How will I pay the advance? Is it safe?',
+          a: '⚠️ IMPORTANT: We will ONLY send payment QR codes/scanners from our official WhatsApp number (+91 93102 82351). Never pay to any other number or scanner claiming to be from SLIQUES. All advance payments are done through UPI or bank transfer via the scanner we send on WhatsApp.'
+        },
+        {
+          q: 'Can I pay during doorstep measurement visit?',
+          a: 'Yes! If you opt for "Tailor at Doorstep" service, you can pay the advance amount in cash or via UPI directly to our tailor during the measurement visit. This is convenient if you prefer not to pay online beforehand.'
         },
         {
           q: 'Is the advance refundable?',
-          a: 'The advance is non-refundable in case of cancellation. However, it can be adjusted against a future booking if you reschedule.'
+          a: 'The advance is non-refundable in case of cancellation as we may have already purchased materials. However, it can be adjusted against a future booking if you reschedule.'
         },
         {
           q: 'What payment methods do you accept?',
-          a: 'We accept UPI, bank transfer, and cash. Online payment links are sent via WhatsApp for convenient payment.'
+          a: 'We accept: (1) UPI payment via QR scanner sent on WhatsApp, (2) Bank transfer, (3) Cash during doorstep measurement or delivery. Final payment can be made via any of these methods upon delivery.'
         },
         {
           q: 'How is the urgent surcharge calculated?',

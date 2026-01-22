@@ -315,9 +315,15 @@ const Booking = () => {
             </div>
 
             {completedBooking.advanceAmount > 0 && (
-              <div className="bg-gold/10 rounded-sm p-4 mb-6 text-left">
-                <p className="text-sm text-gold-dark">
-                  <strong>Payment:</strong> We'll send you the payment scanner via WhatsApp shortly. Please pay the advance to confirm your booking.
+              <div className="bg-gold/10 rounded-sm p-4 mb-6 text-left space-y-2">
+                <p className="text-sm text-gold-dark font-medium">
+                  💰 Advance Payment: ₹{completedBooking.advanceAmount}
+                </p>
+                <p className="text-sm text-charcoal/80">
+                  We'll send you the payment scanner via WhatsApp shortly.
+                </p>
+                <p className="text-xs text-charcoal/70 bg-charcoal/5 rounded p-2">
+                  ⚠️ <strong>Safety Note:</strong> Only pay via scanner sent from our official WhatsApp (+91 93102 82351). You can also pay in cash or UPI during doorstep measurement visit.
                 </p>
               </div>
             )}
@@ -1039,10 +1045,15 @@ const Booking = () => {
                         <span className="text-lg sm:text-xl font-bold text-charcoal">₹{pricing.total}</span>
                       </div>
                       {pricing.advanceAmount > 0 && (
-                        <div className="flex justify-between text-xs sm:text-sm">
-                          <span className="text-charcoal/70">Advance (30%)</span>
-                          <span className="text-gold-dark font-medium">₹{pricing.advanceAmount}</span>
-                        </div>
+                        <>
+                          <div className="flex justify-between text-xs sm:text-sm">
+                            <span className="text-charcoal/70">Advance (30%)</span>
+                            <span className="text-gold-dark font-medium">₹{pricing.advanceAmount}</span>
+                          </div>
+                          <p className="text-[10px] text-charcoal/60 mt-2 leading-relaxed">
+                            💳 Pay via WhatsApp scanner or cash/UPI during doorstep visit
+                          </p>
+                        </>
                       )}
                     </div>
                   </div>

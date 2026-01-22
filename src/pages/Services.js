@@ -214,7 +214,31 @@ const Services = () => {
                 <strong className="text-charcoal">Urgent orders</strong> (minimum 36 hours notice) incur a <span className="text-wine font-medium">+30% surcharge</span> to prioritize your order.
               </p>
               <p>
-                <strong className="text-charcoal">Advance payment</strong> of 30% is required to confirm your booking. Balance is due upon delivery.
+                <strong className="text-charcoal">Advance payment</strong> of 30% is required for orders needing lining, padding, or materials. This helps us procure quality materials upfront.
+              </p>
+            </div>
+            
+            {/* Payment Info Box */}
+            <div className="mt-6 p-4 bg-gold/5 rounded border border-gold/20">
+              <h4 className="font-medium text-charcoal mb-2 flex items-center gap-2">
+                <span className="text-lg">💳</span> Payment Options
+              </h4>
+              <ul className="text-sm text-charcoal/70 space-y-1.5">
+                <li className="flex items-start gap-2">
+                  <span className="text-gold">✓</span>
+                  <span><strong>WhatsApp Scanner:</strong> We'll send QR code from our official number (+91 93102 82351)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-gold">✓</span>
+                  <span><strong>Doorstep Payment:</strong> Pay cash or UPI during tailor's measurement visit</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-gold">✓</span>
+                  <span><strong>On Delivery:</strong> Remaining balance payable via cash/UPI on delivery</span>
+                </li>
+              </ul>
+              <p className="mt-3 text-xs text-wine/80 bg-wine/5 p-2 rounded">
+                ⚠️ For your safety, only pay via scanner sent from our official WhatsApp: +91 93102 82351
               </p>
             </div>
           </div>
