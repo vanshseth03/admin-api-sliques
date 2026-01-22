@@ -1,0 +1,223 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gold: #C9A227;
+  --gold-dark: #B58E52;
+  --charcoal: #111317;
+  --ivory: #FBF9F6;
+  --wine: #722F37;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #111317;
+  color: #FBF9F6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C9A227;
+  border-radius: 2px;
+}
+
+/* Status badges */
+.status-pending { background: #FFA50020; color: #FFA500; }
+.status-confirmed { background: #4CAF5020; color: #4CAF50; }
+.status-fabric-received { background: #2196F320; color: #2196F3; }
+.status-cutting { background: #9C27B020; color: #9C27B0; }
+.status-stitching { background: #E91E6320; color: #E91E63; }
+.status-finishing { background: #00BCD420; color: #00BCD4; }
+.status-ready { background: #8BC34A20; color: #8BC34A; }
+.status-out-for-delivery { background: #FF980020; color: #FF9800; }
+.status-delivered { background: #4CAF5030; color: #4CAF50; }
+.status-cancelled { background: #f4433620; color: #f44336; }
+
+/* Safe area for mobile */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+/* Pull to refresh indicator */
+.pull-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gold);
+  color: var(--charcoal);
+  padding: 8px 16px;
+  border-radius: 0 0 8px 8px;
+  font-size: 12px;
+  z-index: 1000;
+}
+
+/* Ripple effect */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(201, 162, 39, 0.3) 0%, transparent 70%);
+  transform: scale(0);
+  opacity: 0;
+}
+
+.ripple:active::after {
+  transform: scale(2);
+  opacity: 1;
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Order card */
+.order-card {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid #2a2a2a;
+  transition: all 0.2s ease;
+}
+
+.order-card:active {
+  transform: scale(0.98);
+  background: #222;
+}
+
+/* Bottom nav */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1a1a1a;
+  border-top: 1px solid #2a2a2a;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  z-index: 100;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 16px;
+  color: #888;
+  font-size: 10px;
+  transition: color 0.2s;
+}
+
+.nav-item.active {
+  color: var(--gold);
+}
+
+.nav-item svg {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 4px;
+}
+
+/* Input fields */
+input, textarea, select {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #FBF9F6;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 16px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--gold);
+}
+
+/* Buttons */
+.btn-gold {
+  background: linear-gradient(135deg, #D4AF37 0%, #B58E52 100%);
+  color: #111317;
+  font-weight: 600;
+  padding: 14px 24px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.btn-gold:active {
+  transform: scale(0.98);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-outline:active {
+  background: rgba(201, 162, 39, 0.1);
+}

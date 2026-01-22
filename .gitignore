@@ -3,11 +3,15 @@ node_modules/
 
 # Production build
 build/
+<<<<<<< HEAD
 dist/
+=======
+>>>>>>> bcbfd2babc52391f4596b58a3859559ee223f6ee
 
 # Environment files
 .env
 .env.local
+<<<<<<< HEAD
 .env.development.local
 .env.test.local
 .env.production.local
@@ -22,11 +26,19 @@ yarn-error.log*
 .vscode/
 *.swp
 *.swo
+=======
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+>>>>>>> bcbfd2babc52391f4596b58a3859559ee223f6ee
 
 # OS files
 .DS_Store
 Thumbs.db
 
+<<<<<<< HEAD
 # Test coverage
 coverage/
 
@@ -36,3 +48,8 @@ coverage/
 # Admin portal and server (separate repo)
 admin-portal/
 server/
+=======
+# Editor
+.vscode/
+.idea/
+>>>>>>> bcbfd2babc52391f4596b58a3859559ee223f6ee
