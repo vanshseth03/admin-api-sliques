@@ -498,18 +498,18 @@ app.get('/api/available-dates', async (req, res) => {
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + DAYS_TO_CHECK);
     
-    // Aggregate orders by booking date
+    // Aggregate orders by estimated delivery date (when order is expected to be delivered)
     const orderCounts = await Order.aggregate([
       {
         $match: {
-          bookingDate: { $gte: startDate, $lte: endDate },
+          estimatedDelivery: { $gte: startDate, $lte: endDate },
           bookingType: 'normal',
           status: { $ne: 'cancelled' }
         }
       },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$bookingDate' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$estimatedDelivery' } },
           count: { $sum: 1 }
         }
       }
@@ -547,7 +547,7 @@ app.get('/api/available-dates', async (req, res) => {
       checkDate.setDate(checkDate.getDate() + 1);
     }
     
-    // Find the first available date
+    // Find the first available date (for estimated delivery)
     const firstAvailable = availableDates.find(d => !d.isFull);
     
     res.json({
@@ -560,6 +560,89 @@ app.get('/api/available-dates', async (req, res) => {
   } catch (error) {
     console.error('Get available dates error:', error);
     res.status(500).json({ error: 'Failed to fetch available dates' });
+  }
+});
+
+// Get estimated delivery date based on DB counter
+// When 4 orders are scheduled for a date, move to next available date
+app.get('/api/estimated-delivery', async (req, res) => {
+  try {
+    const MAX_NORMAL_PER_DAY = 4;
+    const MIN_DAYS_AHEAD = 7;
+    const DAYS_TO_CHECK = 60;
+    
+    // Get the processing start date from query or default to 1 week from now
+    let processingStartDate;
+    if (req.query.processingStart) {
+      processingStartDate = new Date(req.query.processingStart);
+    } else {
+      processingStartDate = new Date();
+      processingStartDate.setDate(processingStartDate.getDate() + 1);
+    }
+    processingStartDate.setHours(0, 0, 0, 0);
+    
+    // Calculate initial estimated delivery (7 days from processing start)
+    const initialDeliveryDate = new Date(processingStartDate);
+    initialDeliveryDate.setDate(initialDeliveryDate.getDate() + MIN_DAYS_AHEAD);
+    
+    // Get order counts for the date range
+    const endDate = new Date(initialDeliveryDate);
+    endDate.setDate(endDate.getDate() + DAYS_TO_CHECK);
+    
+    // Aggregate orders by estimated delivery date
+    const orderCounts = await Order.aggregate([
+      {
+        $match: {
+          estimatedDelivery: { $gte: initialDeliveryDate, $lte: endDate },
+          bookingType: 'normal',
+          status: { $ne: 'cancelled' }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$estimatedDelivery' } },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    // Create a map of date -> count
+    const countMap = {};
+    orderCounts.forEach(item => {
+      countMap[item._id] = item.count;
+    });
+    
+    // Find the first date with less than 4 orders
+    const checkDate = new Date(initialDeliveryDate);
+    let estimatedDelivery = null;
+    
+    for (let i = 0; i < DAYS_TO_CHECK; i++) {
+      const dateStr = checkDate.toISOString().split('T')[0];
+      const count = countMap[dateStr] || 0;
+      
+      if (count < MAX_NORMAL_PER_DAY) {
+        estimatedDelivery = dateStr;
+        break;
+      }
+      
+      checkDate.setDate(checkDate.getDate() + 1);
+    }
+    
+    // If no date found, use the initial delivery date anyway
+    if (!estimatedDelivery) {
+      estimatedDelivery = initialDeliveryDate.toISOString().split('T')[0];
+    }
+    
+    res.json({
+      success: true,
+      processingStartDate: processingStartDate.toISOString().split('T')[0],
+      estimatedDelivery,
+      maxPerDay: MAX_NORMAL_PER_DAY,
+      minDaysFromProcessing: MIN_DAYS_AHEAD
+    });
+  } catch (error) {
+    console.error('Get estimated delivery error:', error);
+    res.status(500).json({ error: 'Failed to calculate estimated delivery' });
   }
 });
 
